@@ -115,6 +115,15 @@ class CrudStructure:
                 "module_suffix": "database",
                 "template": "database.txt",
             },
+
+            "database_init": {
+                "layer": "backend",
+                "folder": "database",
+                "class_suffix": "",
+                "file_suffix": ".py",
+                "module_suffix": None,
+                "template": None,
+            },
             "sql": {
                 "layer": "backend",
                 "folder": "database",

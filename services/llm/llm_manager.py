@@ -8,42 +8,52 @@ class LLMManager:
 
     def __init__(self):
 
-        self.providers = {
+        self.providers = {}
 
-            "openai": OpenAIProvider(),
+        self.provider_classes = {
 
-            "ollama": OllamaProvider(),
+            "openai": OpenAIProvider,
 
-            "gemini": GeminiProvider(),
+            "ollama": OllamaProvider,
 
-            "claude": ClaudeProvider()
+            "gemini": GeminiProvider,
+
+            "claude": ClaudeProvider
 
         }
 
         self.default = "ollama"
 
+
+    def get_provider(self, name):
+
+        if name not in self.providers:
+
+            provider_class = self.provider_classes.get(name)
+
+            if provider_class is None:
+
+                raise Exception(
+                    f"No existe el proveedor {name}"
+                )
+
+            self.providers[name] = provider_class()
+
+        return self.providers[name]
+
+
     def ask(
-
         self,
-
         prompt,
-
         provider=None
-
     ):
 
         if provider is None:
 
             provider = self.default
 
-        llm = self.providers.get(provider)
 
-        if llm is None:
+        llm = self.get_provider(provider)
 
-            raise Exception(
-
-                f"No existe el proveedor {provider}"
-
-            )
 
         return llm.ask(prompt)

@@ -52,7 +52,6 @@ class ModelGenerator(BaseGenerator):
         imports = self._build_imports(context)
 
         columns = []
-
         for field in context.fields:
 
             columns.append(

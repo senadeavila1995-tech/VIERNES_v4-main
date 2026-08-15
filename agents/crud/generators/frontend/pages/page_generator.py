@@ -61,9 +61,33 @@ export default function {component}() {{
         loading,
         error,
         load,
+        update,
+        remove,
     }} = {hook}();
 
     const [open, setOpen] = useState(false);
+
+    const [selected, setSelected] = useState<any>(null);
+
+
+    const handleEdit = (
+        item:any
+    ) => {{
+
+        setSelected(item);
+
+        setOpen(true);
+
+    }};
+
+
+    const handleDelete = async (
+        id:number
+    ) => {{
+
+        await remove(id);
+
+    }};
 
 
     return (
@@ -100,8 +124,10 @@ export default function {component}() {{
             >
 
                 <{form}
+                    data={{selected}}
                     onSaved={{async () => {{
                         await load();
+                        setSelected(null);
                         setOpen(false);
                     }}}}
                 />
@@ -119,6 +145,8 @@ export default function {component}() {{
 
                 <{table}
                     data={{{variable}}}
+                    onEdit={{handleEdit}}
+                    onDelete={{handleDelete}}
                 />
 
             )}}

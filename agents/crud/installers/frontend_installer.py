@@ -95,6 +95,16 @@ ReactDOM
 );
 """,
 
+            ".env": """
+VITE_API_URL=http://127.0.0.1:8000
+""",
+
+            "config/api.ts": """
+export const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://127.0.0.1:8000";
+""",
+
             "vite.config.ts": """
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -130,6 +140,11 @@ export default defineConfig({
         for name, content in files.items():
 
             file = frontend / name
+
+            file.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
 
             if not file.exists():
 

@@ -70,6 +70,9 @@ class CreateDtoGenerator(BaseGenerator):
 
         body = "\n\n".join(fields)
 
+        if not body:
+            body = "    pass"
+
         return f'''"""
 DTO Create generado automáticamente por VIERNES.
 

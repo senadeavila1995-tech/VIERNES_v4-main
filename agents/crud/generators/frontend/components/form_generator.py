@@ -32,6 +32,8 @@ class FormGenerator(BaseFrontendGenerator):
 
         imports = [
             'import { useEffect, useState } from "react";',
+            f'import type {{ {entity_pascal} }} '
+            f'from "../types/{entity_snake}";',
             f'import type {{ {entity_pascal}Create }} '
             f'from "../types/{entity_snake}_create";',
             f'import {{ {entity_camel}Service }} '
@@ -389,10 +391,20 @@ class FormGenerator(BaseFrontendGenerator):
         return f'''{imports_content}
 
 interface Props {{
+
+    data?: {entity_pascal};
+
     onSaved?: () => void | Promise<void>;
+
 }}
 
-export default function {component}({{ onSaved }}: Props) {{
+export default function {component}({{
+
+    data,
+
+    onSaved
+
+}}: Props) {{
 
 {states_content}
 
@@ -403,6 +415,20 @@ export default function {component}({{ onSaved }}: Props) {{
     const [loading, setLoading] = useState(false);
 
     const [error, setError] = useState("");
+
+
+    useEffect(() => {{
+
+        if(data) {{
+
+            setFormData({{
+                ...data
+            }});
+
+        }}
+
+    }}, [data]);
+
 
 {use_effect}
 
@@ -416,7 +442,7 @@ export default function {component}({{ onSaved }}: Props) {{
 
         const target = event.target;
 
-        let parsedValue: string | number | boolean = value;
+        let parsedValue: string | number | boolean | null = value;
 
         if (target instanceof HTMLInputElement) {{
 
@@ -462,7 +488,20 @@ export default function {component}({{ onSaved }}: Props) {{
 {numeric_payload_content}
             }};
 
-            await {entity_camel}Service.create(payload);
+            if(data?.id) {{
+
+                await {entity_camel}Service.update(
+                    data.id,
+                    payload
+                );
+
+            }} else {{
+
+                await {entity_camel}Service.create(
+                    payload
+                );
+
+            }}
 
             await onSaved?.();
 

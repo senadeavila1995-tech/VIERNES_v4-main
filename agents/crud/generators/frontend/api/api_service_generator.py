@@ -27,7 +27,7 @@ class ApiServiceGenerator(BaseFrontendGenerator):
 import type {{ {entity} }} from "../types/{variable}";
 
 
-const API_URL = "/api/{variable}";
+const API_URL = "/{variable}/";
 
 
 export const {service} = {{

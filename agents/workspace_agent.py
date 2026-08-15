@@ -44,8 +44,7 @@ class WorkspaceAgent:
             "README.md",
             "requirements.txt",
             ".gitignore",
-            ".env",
-            "main.py"
+            ".env"
         ]
 
 

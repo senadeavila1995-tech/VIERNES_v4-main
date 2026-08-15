@@ -58,6 +58,9 @@ class UpdateDtoGenerator(BaseGenerator):
 
         body = "\n\n".join(fields)
 
+        if not body:
+            body = "    pass"
+
 
         return f'''"""
 DTO Update generado automáticamente por VIERNES.

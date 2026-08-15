@@ -38,9 +38,21 @@ interface Props {{
 
     data:any[];
 
+    onEdit:(item:any)=>void;
+
+    onDelete:(id:number)=>void;
+
 }}
 
-export default function {component}Table({{data}}:Props) {{
+export default function {component}Table({{
+
+    data,
+
+    onEdit,
+
+    onDelete
+
+}}:Props) {{
 
     return (
 
@@ -51,6 +63,8 @@ export default function {component}Table({{data}}:Props) {{
                 <tr>
 
 {headers}
+
+                    <th>Acciones</th>
 
                 </tr>
 
@@ -63,6 +77,35 @@ export default function {component}Table({{data}}:Props) {{
                     <tr key={{item.id}}>
 
 {cells}
+
+                        <td>
+
+                            <button
+
+                                className="btn btn-warning btn-sm me-2"
+
+                                onClick={{() => onEdit(item)}}
+
+                            >
+
+                                Editar
+
+                            </button>
+
+
+                            <button
+
+                                className="btn btn-danger btn-sm"
+
+                                onClick={{() => onDelete(item.id)}}
+
+                            >
+
+                                Eliminar
+
+                            </button>
+
+                        </td>
 
                     </tr>
 

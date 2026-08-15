@@ -179,7 +179,9 @@ for _model in _RESPONSE_MODELS.values():
 
         return f'''from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
+from backend.framework.database.init_database import init_database
 from backend.framework.exceptions.database import DatabaseIntegrityError
 {response_imports_text}
 {response_rebuild}
@@ -188,6 +190,24 @@ from backend.framework.exceptions.database import DatabaseIntegrityError
 
 app = FastAPI(
     title="VIERNES Generated API"
+)
+
+
+@app.on_event("startup")
+def startup():
+
+    init_database()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -1,4 +1,5 @@
 from agents.crud.generators.backend.root.main_generator import MainGenerator
+from agents.crud.generators.backend.database_init_generator import DatabaseInitGenerator
 from agents.crud.generators.backend.controller_generator import ControllerGenerator
 from agents.crud.generators.backend.dto_generator import DtoGenerator
 from agents.crud.generators.backend.create_dto_generator import CreateDtoGenerator
@@ -77,6 +78,7 @@ class GeneratorRegistry:
         self.register(ControllerGenerator())
         self.register(RouteGenerator())
         self.register(MainGenerator())
+        self.register(DatabaseInitGenerator())
 
         # ===========================
         # DATABASE

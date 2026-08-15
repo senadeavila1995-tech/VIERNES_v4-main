@@ -129,6 +129,12 @@ class ResponseDtoGenerator(BaseGenerator):
 
         body = "\n\n".join(fields)
 
+        if not body:
+            body = "    pass"
+
+        if not body:
+            body = "    pass"
+
         return f'''"""
 DTO Response generado automáticamente por VIERNES.
 
