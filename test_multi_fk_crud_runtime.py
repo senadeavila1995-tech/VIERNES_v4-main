@@ -640,4 +640,108 @@ assert data["aprobado_por_id"] is None
 
 print()
 print("OK: FK nullable funciona en runtime")
+
+print("="*60)
+print("VALIDANDO CRUD RUNTIME MULTI-FK")
+print("="*60)
+
+
+print()
+print("CREATE USUARIOS ADICIONALES")
+
+usuarios = [
+    {"nombre": "Carlos"},
+    {"nombre": "Maria"},
+    {"nombre": "Pedro"},
+]
+
+usuarios_ids = []
+
+for usuario in usuarios:
+    r = client.post("/usuario/", json=usuario)
+    print("CREATE USUARIO:", r.status_code, r.json())
+    usuarios_ids.append(r.json()["id"])
+
+
+carlos_id = usuarios_ids[0]
+maria_id = usuarios_ids[1]
+pedro_id = usuarios_ids[2]
+
+
+print()
+print("CREATE PEDIDO CON DOS FK")
+
+pedido_1 = {
+    "numero": "PED-001",
+    "creado_por_id": carlos_id,
+    "aprobado_por_id": maria_id
+}
+
+r = client.post("/pedido/", json=pedido_1)
+
+print("CREATE PEDIDO COMPLETO:", r.status_code)
+print(r.json())
+
+
+print()
+print("CREATE PEDIDO CON FK NULLABLE")
+
+pedido_2 = {
+    "numero": "PED-002",
+    "creado_por_id": pedro_id,
+    "aprobado_por_id": None
+}
+
+r = client.post("/pedido/", json=pedido_2)
+
+print("CREATE PEDIDO NULL:", r.status_code)
+print(r.json())
+
+
+pedido_null_id = r.json()["id"]
+
+
+print()
+print("READ PEDIDOS")
+
+r = client.get("/pedido/")
+
+print("GET PEDIDOS:", r.status_code)
+
+for pedido in r.json():
+    print(pedido)
+
+
+print()
+print("UPDATE FK NULLABLE")
+
+update = {
+    "aprobado_por_id": maria_id
+}
+
+r = client.put(
+    f"/pedido/{pedido_null_id}",
+    json=update
+)
+
+print("UPDATE:", r.status_code)
+print(r.json())
+
+
+print()
+print("DELETE PEDIDO")
+
+r = client.delete(
+    f"/pedido/{pedido_null_id}"
+)
+
+print("DELETE:", r.status_code)
+print(r.json())
+
+
+print("="*60)
+print("CRUD RUNTIME MULTI-FK FINALIZADO")
+print("="*60)
+
+
 print("=" * 60)

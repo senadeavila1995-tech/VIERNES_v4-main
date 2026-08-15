@@ -129,10 +129,15 @@ class BaseFrontendGenerator(BaseGenerator):
             "uuid": "string",
         }
 
-        return mapper.get(
+        result = mapper.get(
             str(field.type).lower(),
             "any",
         )
+
+        if getattr(field, "nullable", False):
+            result = f"{result} | null"
+
+        return result
 
     # =====================================================
     # CAMPOS INTERFACE TYPESCRIPT

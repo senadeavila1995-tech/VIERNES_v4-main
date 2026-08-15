@@ -7,6 +7,9 @@ import sys
 import os
 
 
+ROOT = os.getcwd()
+
+
 TESTS = [
     (
         "test_multi_fk_runtime.py",
@@ -15,17 +18,26 @@ TESTS = [
 
     (
         "test_multi_fk_fastapi_runtime.py",
-        "workspace/multi_fk_test/src",
+        [
+            "workspace/multi_fk_test/src",
+            "workspace/multi_fk_test/src/backend",
+        ],
     ),
 
     (
         "test_multi_fk_nullable_runtime.py",
-        "workspace/multi_fk_nullable_runtime_test/src",
+        [
+            "workspace/multi_fk_nullable_runtime_test/src",
+            "workspace/multi_fk_nullable_runtime_test/src/backend",
+        ],
     ),
 
     (
         "test_multi_fk_nullable_mysql_runtime.py",
-        "workspace/multi_fk_nullable_runtime_test/src",
+        [
+            "workspace/multi_fk_nullable_runtime_test/src",
+            "workspace/multi_fk_nullable_runtime_test/src/backend",
+        ],
     ),
 
     (
@@ -43,7 +55,7 @@ print("=" * 80)
 failed = []
 
 
-for test, path in TESTS:
+for test, paths in TESTS:
 
     print()
     print("=" * 80)
@@ -54,8 +66,11 @@ for test, path in TESTS:
     env = os.environ.copy()
 
 
-    if path:
-        env["PYTHONPATH"] = path
+    if paths:
+
+        env["PYTHONPATH"] = ":".join(
+            paths
+        )
 
 
     result = subprocess.run(
@@ -73,6 +88,7 @@ for test, path in TESTS:
 
         print()
         print("ERROR:", test)
+
 
 
 print()

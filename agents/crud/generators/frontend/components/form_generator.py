@@ -130,6 +130,24 @@ class FormGenerator(BaseFrontendGenerator):
                     context,
                 )
 
+                nullable = getattr(
+                    field,
+                    "nullable",
+                    False,
+                )
+
+                nullable_option_value = (
+                    ""
+                    if nullable
+                    else "0"
+                )
+
+                nullable_option_label = (
+                    f"Sin {label.lower()}"
+                    if nullable
+                    else f"Seleccione {label.lower()}"
+                )
+
                 inputs.append(
                     f'''        <div className="mb-3">
 
@@ -144,8 +162,8 @@ class FormGenerator(BaseFrontendGenerator):
             onChange={{handleChange}}
         >
 
-            <option value="0">
-                Seleccione {label.lower()}
+            <option value="{nullable_option_value}">
+                {nullable_option_label}
             </option>
 
             {{Array.isArray({reference_variable}) &&
@@ -238,8 +256,18 @@ class FormGenerator(BaseFrontendGenerator):
 
             field_type = self.ts_type(field)
 
+            nullable = getattr(
+                field,
+                "nullable",
+                False,
+            )
+
             if field_type == "number":
-                value = "0"
+
+                if nullable:
+                    value = "null"
+                else:
+                    value = "0"
 
             elif field_type == "boolean":
                 value = "false"
@@ -303,10 +331,36 @@ class FormGenerator(BaseFrontendGenerator):
 
         for field_name in numeric_fields:
 
-            numeric_payload.append(
-                f'''            {field_name}:
-                Number(formData.{field_name}),'''
+            field = next(
+                (
+                    item
+                    for item in context.fields
+                    if item.name == field_name
+                ),
+                None,
             )
+
+            nullable = getattr(
+                field,
+                "nullable",
+                False,
+            )
+
+            if nullable:
+
+                numeric_payload.append(
+                    f'''            {field_name}:
+                formData.{field_name}
+                    ? Number(formData.{field_name})
+                    : null,'''
+                )
+
+            else:
+
+                numeric_payload.append(
+                    f'''            {field_name}:
+                Number(formData.{field_name}),'''
+                )
 
         numeric_payload_content = "\n".join(
             numeric_payload
@@ -378,7 +432,9 @@ export default function {component}({{ onSaved }}: Props) {{
 
         }} else if ({numeric_condition_select}) {{
 
-            parsedValue = Number(value);
+            parsedValue = value === ""
+                ? null
+                : Number(value);
 
         }}
 

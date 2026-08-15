@@ -1,32 +1,44 @@
-# Entornos virtuales
-venv/
-.venv/
-
-# Caché de Python
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
 
-# Variables de entorno
+# Virtual environment
+.venv/
+venv/
+
+# Environment
 .env
 
-# Logs
-logs/
-*.log
+# Databases
+*.db
+*.sqlite
+*.sqlite3
 
-# VS Code
+# Generated workspaces
+workspace/*/src/backend/__pycache__/
+workspace/*/src/frontend/node_modules/
+
+# Node
+node_modules/
+dist/
+
+# IDE
 .vscode/
-
-# PyCharm
 .idea/
 
-# Workspace generado por VIERNES
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# VIERNES generated projects
 workspace/
 
-# Archivos temporales
-*.tmp
+# Backup files
 *.bak
-*.swp
-
-# Tests temporales
-estado_git.txt
+*.backup
+*.before_*
+*.old
