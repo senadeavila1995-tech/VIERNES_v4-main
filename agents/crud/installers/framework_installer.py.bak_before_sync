@@ -1,0 +1,60 @@
+from pathlib import Path
+import shutil
+
+from agents.crud.models.generation_context import GenerationContext
+
+
+class FrameworkInstaller:
+    """
+    Instala el framework base dentro del proyecto generado.
+
+    La instalación ocurre una sola vez por generación.
+    """
+
+    METADATA_KEY = "framework_installed"
+
+    # ==========================================================
+    # Instalación
+    # ==========================================================
+
+    def install(
+        self,
+        context: GenerationContext,
+    ) -> None:
+
+        if context.get_metadata(self.METADATA_KEY, False):
+            return
+
+        source = self._framework_source()
+
+        destination = (
+            Path(context.project.source_path)
+            / "backend"
+            / "framework"
+        )
+
+        if not destination.exists():
+
+            shutil.copytree(
+                source,
+                destination,
+            )
+
+            print("\n========== FRAMEWORK ==========")
+            print("Origen :", source)
+            print("Destino:", destination)
+            print("Existe :", destination.exists())
+            print("===============================\n")
+
+        context.set_metadata(
+            self.METADATA_KEY,
+            True,
+        )
+
+    # ==========================================================
+    # Framework origen
+    # ==========================================================
+
+    def _framework_source(self) -> Path:
+
+        return Path(__file__).resolve().parents[2] / "framework"

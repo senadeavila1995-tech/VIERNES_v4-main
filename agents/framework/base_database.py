@@ -1,0 +1,231 @@
+from abc import ABC
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from backend.framework.exceptions.database import DatabaseIntegrityError
+
+
+class BaseDatabase(ABC):
+    """
+    Capa base de acceso a datos.
+
+    Utiliza una sesión SQLAlchemy y un modelo ORM concreto.
+
+    Si el modelo contiene el campo ``deleted_at``, el CRUD utiliza
+    Soft Delete automáticamente.
+    """
+
+    def __init__(
+        self,
+        session: Session,
+        model,
+    ):
+        self.session = session
+        self.model = model
+
+    # ==========================================================
+    # Soft Delete
+    # ==========================================================
+
+    @property
+    def supports_soft_delete(self) -> bool:
+        """
+        Determina si el modelo soporta Soft Delete.
+
+        La presencia del campo ``deleted_at`` en el modelo ORM
+        activa automáticamente este comportamiento.
+        """
+
+        return hasattr(self.model, "deleted_at")
+
+    # ==========================================================
+    # Crear
+    # ==========================================================
+
+    def create(self, data: dict):
+
+        instance = self.model(**data)
+
+        self.session.add(instance)
+
+        try:
+
+            self.session.commit()
+
+        except IntegrityError as exc:
+
+            self.session.rollback()
+
+            raise DatabaseIntegrityError(
+                "No se puede crear el registro porque "
+                "viola una restricción de integridad.",
+                original=exc,
+            ) from exc
+
+        self.session.refresh(instance)
+
+        return instance
+
+    # ==========================================================
+    # Buscar
+    # ==========================================================
+
+    def get(self, id):
+
+        query = (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+        )
+
+        if self.supports_soft_delete:
+
+            query = query.filter(
+                self.model.deleted_at.is_(None)
+            )
+
+        return query.first()
+
+    # ==========================================================
+    # Listar
+    # ==========================================================
+
+    def list(self):
+
+        query = self.session.query(self.model)
+
+        if self.supports_soft_delete:
+
+            query = query.filter(
+                self.model.deleted_at.is_(None)
+            )
+
+        return query.all()
+
+    # ==========================================================
+    # Actualizar
+    # ==========================================================
+
+    def update(
+        self,
+        id,
+        data: dict,
+    ):
+
+        query = (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+        )
+
+        if self.supports_soft_delete:
+
+            query = query.filter(
+                self.model.deleted_at.is_(None)
+            )
+
+        instance = query.first()
+
+        if instance is None:
+            return None
+
+        for field, value in data.items():
+
+            if field == "id":
+                continue
+
+            if field == "deleted_at":
+                continue
+
+            if hasattr(instance, field):
+                setattr(instance, field, value)
+
+        try:
+
+            self.session.commit()
+
+        except IntegrityError as exc:
+
+            self.session.rollback()
+
+            raise DatabaseIntegrityError(
+                "No se puede actualizar el registro porque "
+                "viola una restricción de integridad.",
+                original=exc,
+            ) from exc
+
+        self.session.refresh(instance)
+
+        return instance
+
+    # ==========================================================
+    # Eliminar
+    # ==========================================================
+
+    def delete(self, id):
+
+        query = (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+        )
+
+        if self.supports_soft_delete:
+
+            query = query.filter(
+                self.model.deleted_at.is_(None)
+            )
+
+        instance = query.first()
+
+        if instance is None:
+            return False
+
+        # ======================================================
+        # Soft Delete
+        # ======================================================
+
+        if self.supports_soft_delete:
+
+            from sqlalchemy.sql import func
+
+            instance.deleted_at = func.now()
+
+            try:
+
+                self.session.commit()
+
+            except IntegrityError as exc:
+
+                self.session.rollback()
+
+                raise DatabaseIntegrityError(
+                    "No se puede eliminar el registro porque "
+                    "viola una restricción de integridad.",
+                    original=exc,
+                ) from exc
+
+            return True
+
+        # ======================================================
+        # Hard Delete
+        # ======================================================
+
+        self.session.delete(instance)
+
+        try:
+
+            self.session.commit()
+
+        except IntegrityError as exc:
+
+            self.session.rollback()
+
+            raise DatabaseIntegrityError(
+                "No se puede eliminar el registro porque "
+                "viola una restricción de integridad.",
+                original=exc,
+            ) from exc
+
+        return True

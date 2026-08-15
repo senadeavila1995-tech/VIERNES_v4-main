@@ -1,0 +1,195 @@
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+
+# ==========================================================
+# PATHS
+# ==========================================================
+
+PROJECT_PATH = Path(
+    "workspace/relationship_complex_test/src"
+)
+
+BACKEND_PATH = PROJECT_PATH / "backend"
+
+
+sys.path.insert(
+    0,
+    str(PROJECT_PATH)
+)
+
+sys.path.insert(
+    0,
+    str(BACKEND_PATH)
+)
+
+
+# ==========================================================
+# DATABASE SQLITE
+# ==========================================================
+
+from framework.base_model import Base
+
+
+engine = create_engine(
+    "sqlite://",
+    connect_args={
+        "check_same_thread": False
+    },
+    poolclass=StaticPool,
+)
+
+
+SessionTest = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+)
+
+
+# ==========================================================
+# MODELOS
+# ==========================================================
+
+from modules.cliente.models.cliente import Cliente
+from modules.orden_compra.models.orden_compra import OrdenCompra
+from modules.linea_pedido.models.linea_pedido import LineaPedido
+
+
+Base.metadata.create_all(engine)
+
+
+# ==========================================================
+# FASTAPI
+# ==========================================================
+
+from framework.database.session import get_db
+
+
+from modules.cliente.routes.cliente_route import router as cliente_router
+from modules.orden_compra.routes.orden_compra_route import router as orden_router
+from modules.linea_pedido.routes.linea_pedido_route import router as linea_router
+
+
+app = FastAPI()
+
+
+def override_get_db():
+
+    db = SessionTest()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
+
+
+app.include_router(cliente_router)
+app.include_router(orden_router)
+app.include_router(linea_router)
+
+
+# ==========================================================
+# TEST
+# ==========================================================
+
+client = TestClient(app)
+
+
+print("=" * 60)
+print("RELATIONSHIP API RUNTIME")
+print("=" * 60)
+
+
+# Crear Cliente
+
+response = client.post(
+    "/cliente/",
+    json={
+        "nombre": "Cliente API"
+    }
+)
+
+print("\nCLIENTE")
+print(response.status_code)
+print(response.json())
+
+
+cliente_id = response.json()["id"]
+
+
+# Crear Orden
+
+response = client.post(
+    "/orden_compra/",
+    json={
+        "cliente_id": cliente_id
+    }
+)
+
+print("\nORDEN COMPRA")
+print(response.status_code)
+print(response.json())
+
+
+orden_id = response.json()["id"]
+
+
+# Crear Linea
+
+response = client.post(
+    "/linea_pedido/",
+    json={
+        "orden_compra_id": orden_id
+    }
+)
+
+print("\nLINEA PEDIDO")
+print(response.status_code)
+print(response.json())
+
+
+# Validaciones
+
+assert response.status_code == 200
+
+cliente = client.get(
+    "/cliente/"
+)
+
+
+orden = client.get(
+    "/orden_compra/"
+)
+
+
+linea = client.get(
+    "/linea_pedido/"
+)
+
+
+print("\nLISTADOS")
+print("Clientes:", cliente.json())
+print("Ordenes:", orden.json())
+print("Lineas:", linea.json())
+
+
+assert len(cliente.json()) == 1
+assert len(orden.json()) == 1
+assert len(linea.json()) == 1
+
+
+print()
+print("=" * 60)
+print("RELATIONSHIP API RUNTIME OK")
+print("=" * 60)

@@ -1,0 +1,451 @@
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, configure_mappers
+from sqlalchemy.pool import StaticPool
+
+
+# ==========================================================
+# PATHS
+# ==========================================================
+
+PROJECT_PATH = Path(
+    "workspace/relationship_complex_test/src"
+)
+
+BACKEND_PATH = PROJECT_PATH / "backend"
+
+# Un único namespace de importación:
+# backend.*
+sys.path.insert(0, str(PROJECT_PATH))
+
+
+# ==========================================================
+# DATABASE SQLITE AISLADO
+# ==========================================================
+
+from backend.framework.base_model import Base
+
+engine = create_engine(
+    "sqlite://",
+    connect_args={
+        "check_same_thread": False,
+    },
+    poolclass=StaticPool,
+)
+
+SessionTest = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+)
+
+
+# ==========================================================
+# MODELOS
+# ==========================================================
+
+from backend.modules.cliente.models.cliente import Cliente
+from backend.modules.orden_compra.models.orden_compra import OrdenCompra
+from backend.modules.linea_pedido.models.linea_pedido import LineaPedido
+
+
+# ==========================================================
+# MAPPERS
+# ==========================================================
+
+configure_mappers()
+
+
+# ==========================================================
+# DATABASE
+# ==========================================================
+
+Base.metadata.create_all(engine)
+
+
+# ==========================================================
+# FASTAPI
+# ==========================================================
+
+from backend.framework.database.session import get_db
+
+from backend.modules.cliente.routes.cliente_route import (
+    router as cliente_router,
+)
+
+from backend.modules.orden_compra.routes.orden_compra_route import (
+    router as orden_router,
+)
+
+from backend.modules.linea_pedido.routes.linea_pedido_route import (
+    router as linea_router,
+)
+
+
+app = FastAPI()
+
+
+def override_get_db():
+
+    db = SessionTest()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
+
+app.include_router(cliente_router)
+app.include_router(orden_router)
+app.include_router(linea_router)
+
+
+client = TestClient(app)
+
+
+# ==========================================================
+# TEST
+# ==========================================================
+
+print("=" * 80)
+print("RELATIONSHIP API RUNTIME — REGRESSION TEST")
+print("=" * 80)
+
+
+# ==========================================================
+# 1. TABLAS
+# ==========================================================
+
+print()
+print("1. TABLAS")
+print("-" * 80)
+
+tables = sorted(Base.metadata.tables.keys())
+
+print("TABLAS:", tables)
+
+assert "cliente" in tables
+assert "orden_compra" in tables
+assert "linea_pedido" in tables
+
+print("✓ Tablas registradas")
+
+
+# ==========================================================
+# 2. POST CLIENTE
+# ==========================================================
+
+print()
+print("2. POST /cliente/")
+print("-" * 80)
+
+response = client.post(
+    "/cliente/",
+    json={
+        "nombre": "Cliente Regression",
+    },
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+cliente_data = response.json()
+
+assert cliente_data["id"] == 1
+assert cliente_data["nombre"] == "Cliente Regression"
+
+cliente_id = cliente_data["id"]
+
+print("✓ Cliente creado:", cliente_id)
+
+
+# ==========================================================
+# 3. POST ORDEN
+# ==========================================================
+
+print()
+print("3. POST /orden_compra/")
+print("-" * 80)
+
+response = client.post(
+    "/orden_compra/",
+    json={
+        "cliente_id": cliente_id,
+    },
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+orden_data = response.json()
+
+assert orden_data["id"] == 1
+assert orden_data["cliente_id"] == cliente_id
+
+assert "cliente" in orden_data
+assert orden_data["cliente"]["id"] == cliente_id
+assert orden_data["cliente"]["nombre"] == "Cliente Regression"
+
+orden_id = orden_data["id"]
+
+print("✓ Orden creada:", orden_id)
+print("✓ Orden → Cliente")
+
+
+# ==========================================================
+# 4. POST LINEA
+# ==========================================================
+
+print()
+print("4. POST /linea_pedido/")
+print("-" * 80)
+
+response = client.post(
+    "/linea_pedido/",
+    json={
+        "orden_compra_id": orden_id,
+    },
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+linea_data = response.json()
+
+assert linea_data["id"] == 1
+assert linea_data["orden_compra_id"] == orden_id
+
+assert "orden_compra" in linea_data
+
+assert (
+    linea_data["orden_compra"]["id"]
+    == orden_id
+)
+
+assert (
+    linea_data["orden_compra"]["cliente_id"]
+    == cliente_id
+)
+
+assert "cliente" in linea_data["orden_compra"]
+
+assert (
+    linea_data["orden_compra"]["cliente"]["id"]
+    == cliente_id
+)
+
+print("✓ Línea creada")
+print("✓ Línea → Orden")
+print("✓ Línea → Orden → Cliente")
+
+
+# ==========================================================
+# 5. GET CLIENTE
+# ==========================================================
+
+print()
+print("5. GET /cliente/{id}")
+print("-" * 80)
+
+response = client.get(
+    f"/cliente/{cliente_id}"
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+data = response.json()
+
+assert data["id"] == cliente_id
+assert data["nombre"] == "Cliente Regression"
+
+print("✓ GET Cliente")
+
+
+# ==========================================================
+# 6. GET ORDEN
+# ==========================================================
+
+print()
+print("6. GET /orden_compra/{id}")
+print("-" * 80)
+
+response = client.get(
+    f"/orden_compra/{orden_id}"
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+data = response.json()
+
+assert data["id"] == orden_id
+assert data["cliente_id"] == cliente_id
+
+assert data["cliente"]["id"] == cliente_id
+
+print("✓ GET Orden")
+print("✓ Orden → Cliente")
+
+
+# ==========================================================
+# 7. GET LINEA
+# ==========================================================
+
+print()
+print("7. GET /linea_pedido/{id}")
+print("-" * 80)
+
+response = client.get(
+    "/linea_pedido/1"
+)
+
+print("STATUS:", response.status_code)
+print("JSON  :", response.json())
+
+assert response.status_code == 200
+
+data = response.json()
+
+assert data["id"] == 1
+assert data["orden_compra_id"] == orden_id
+
+assert data["orden_compra"]["id"] == orden_id
+
+assert (
+    data["orden_compra"]["cliente_id"]
+    == cliente_id
+)
+
+assert (
+    data["orden_compra"]["cliente"]["id"]
+    == cliente_id
+)
+
+print("✓ GET Línea")
+print("✓ Línea → Orden → Cliente")
+
+
+# ==========================================================
+# 8. LISTADOS
+# ==========================================================
+
+print()
+print("8. LISTADOS")
+print("-" * 80)
+
+clientes = client.get("/cliente/")
+ordenes = client.get("/orden_compra/")
+lineas = client.get("/linea_pedido/")
+
+assert clientes.status_code == 200
+assert ordenes.status_code == 200
+assert lineas.status_code == 200
+
+assert len(clientes.json()) == 1
+assert len(ordenes.json()) == 1
+assert len(lineas.json()) == 1
+
+print("✓ Clientes:", len(clientes.json()))
+print("✓ Órdenes :", len(ordenes.json()))
+print("✓ Líneas  :", len(lineas.json()))
+
+
+# ==========================================================
+# 9. SQLALCHEMY RELATIONSHIPS
+# ==========================================================
+
+print()
+print("9. SQLALCHEMY RELATIONSHIPS")
+print("-" * 80)
+
+db = SessionTest()
+
+try:
+
+    cliente = db.query(Cliente).first()
+    orden = db.query(OrdenCompra).first()
+    linea = db.query(LineaPedido).first()
+
+    assert cliente is not None
+    assert orden is not None
+    assert linea is not None
+
+    assert orden.cliente.id == cliente.id
+
+    assert len(cliente.orden_compras) == 1
+
+    assert len(orden.linea_pedidos) == 1
+
+    assert linea.orden_compra.id == orden.id
+
+    print(
+        "Cliente.orden_compras:",
+        len(cliente.orden_compras),
+    )
+
+    print(
+        "Orden.cliente:",
+        orden.cliente.nombre,
+    )
+
+    print(
+        "Orden.linea_pedidos:",
+        len(orden.linea_pedidos),
+    )
+
+    print(
+        "Linea.orden_compra:",
+        linea.orden_compra.id,
+    )
+
+finally:
+
+    db.close()
+
+
+# ==========================================================
+# RESULTADO
+# ==========================================================
+
+print()
+print("=" * 80)
+print("RESULTADO")
+print("=" * 80)
+
+print("✓ SQLite StaticPool")
+print("✓ Tablas")
+print("✓ SQLAlchemy mappers")
+print("✓ POST Cliente")
+print("✓ POST OrdenCompra")
+print("✓ POST LineaPedido")
+print("✓ GET Cliente")
+print("✓ GET OrdenCompra")
+print("✓ GET LineaPedido")
+print("✓ Listados")
+print("✓ Orden → Cliente")
+print("✓ Orden → LineaPedido")
+print("✓ LineaPedido → Orden")
+print("✓ LineaPedido → Orden → Cliente")
+print("✓ Relaciones ORM")
+
+print()
+print("RELATIONSHIP API REGRESSION TEST OK")
+print("=" * 80)

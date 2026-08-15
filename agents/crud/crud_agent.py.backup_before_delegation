@@ -1,0 +1,152 @@
+from agents.crud.models.generation_context import GenerationContext
+from agents.crud.registry.generator_registry import GeneratorRegistry
+from agents.crud.writers.file_writer import FileWriter
+
+
+class CrudAgent:
+    """
+    Orquesta la generación completa del CRUD.
+
+    Flujo:
+
+    GeneratorRegistry
+          ↓
+    Generators
+          ↓
+    GeneratedFile
+          ↓
+    FileWriter.write_all()
+          ↓
+    Archivos físicos
+    """
+
+    def __init__(self):
+
+        self.registry = GeneratorRegistry()
+
+        self.writer = FileWriter()
+
+    # ==========================================================
+    # Ejecución
+    # ==========================================================
+
+    def execute(
+        self,
+        context: GenerationContext,
+    ):
+
+        generated_files = []
+
+        results = []
+
+        generators = sorted(
+            self.registry.all(),
+            key=lambda generator: generator.order,
+        )
+
+        # ======================================================
+        # Generación
+        # ======================================================
+
+        for generator in generators:
+
+            try:
+
+                if not generator.validate(context):
+
+                    continue
+
+                generated = generator.generate(context)
+
+                if generated is None:
+
+                    continue
+
+                # ------------------------------------------------
+                # Un generador puede devolver:
+                #
+                # GeneratedFile
+                # list[GeneratedFile]
+                # ------------------------------------------------
+
+                if isinstance(generated, list):
+
+                    generated_files.extend(generated)
+
+                    for generated_file in generated:
+
+                        results.append(
+                            {
+                                "generator": generator.name,
+                                "file": generated_file.filename,
+                                "success": True,
+                            }
+                        )
+
+                else:
+
+                    generated_files.append(generated)
+
+                    results.append(
+                        {
+                            "generator": generator.name,
+                            "file": generated.filename,
+                            "success": True,
+                        }
+                    )
+
+            except Exception as error:
+
+                context.add_error(
+                    f"{generator.name}: {error}"
+                )
+
+                results.append(
+                    {
+                        "generator": generator.name,
+                        "file": None,
+                        "success": False,
+                        "error": str(error),
+                    }
+                )
+
+        # ======================================================
+        # Escritura
+        # ======================================================
+
+        paths = []
+
+        if generated_files:
+
+            try:
+
+                paths = self.writer.write_all(
+                    generated_files,
+                    context,
+                )
+
+                for path in paths:
+
+                    context.add_generated_file(
+                        str(path)
+                    )
+
+            except Exception as error:
+
+                context.add_error(
+                    f"file_writer: {error}"
+                )
+
+        # ======================================================
+        # Resultado
+        # ======================================================
+
+        return {
+            "success": not context.has_errors,
+            "entity": context.entity_name,
+            "database": context.project.database,
+            "generated_files": context.generated_files,
+            "warnings": context.warnings,
+            "errors": context.errors,
+            "results": results,
+        }

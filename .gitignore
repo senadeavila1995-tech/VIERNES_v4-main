@@ -1,0 +1,32 @@
+# Entornos virtuales
+venv/
+.venv/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Variables de entorno
+.env
+
+# Logs
+logs/
+*.log
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Workspace generado por VIERNES
+workspace/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+
+# Tests temporales
+estado_git.txt

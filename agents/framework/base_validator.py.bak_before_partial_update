@@ -1,0 +1,123 @@
+class BaseValidator:
+    """
+    Validador base para todas las entidades.
+
+    Cada Validator únicamente debe definir:
+
+        schema = SCHEMA
+
+    donde SCHEMA tiene el formato:
+
+    SCHEMA = {
+        "nombre": {
+            "type": str,
+            "required": True
+        }
+    }
+
+    El validador acepta:
+    - diccionarios
+    - objetos con atributos
+    """
+
+    schema = {}
+
+    @classmethod
+    def validate(cls, model) -> bool:
+        """
+        Valida una instancia o diccionario utilizando
+        el esquema definido por la entidad.
+        """
+
+        missing = object()
+
+        for field, config in cls.schema.items():
+
+            required = config.get(
+                "required",
+                False,
+            )
+
+            expected = config.get(
+                "type",
+                object,
+            )
+
+            # ==========================================
+            # Obtener valor
+            # ==========================================
+
+            if isinstance(model, dict):
+
+                value = model.get(
+                    field,
+                    missing,
+                )
+
+            else:
+
+                if not hasattr(model, field):
+
+                    if required:
+
+                        raise AttributeError(
+                            f"El atributo '{field}' no existe en "
+                            f"{model.__class__.__name__}."
+                        )
+
+                    continue
+
+                value = getattr(
+                    model,
+                    field,
+                )
+
+            # ==========================================
+            # Campo ausente
+            # ==========================================
+
+            if value is missing:
+
+                if required:
+
+                    raise ValueError(
+                        f"'{field}' es obligatorio."
+                    )
+
+                continue
+
+            # ==========================================
+            # Campo obligatorio = None
+            # ==========================================
+
+            if required and value is None:
+
+                raise ValueError(
+                    f"'{field}' es obligatorio."
+                )
+
+            # ==========================================
+            # Campo opcional = None
+            # ==========================================
+
+            if value is None:
+
+                continue
+
+            # ==========================================
+            # Validación de tipo
+            # ==========================================
+
+            if not isinstance(
+                value,
+                expected,
+            ):
+
+                raise TypeError(
+                    f"'{field}' debe ser de tipo "
+                    f"{expected.__name__} "
+                    f"y se recibió "
+                    f"{type(value).__name__}."
+                )
+
+        return True

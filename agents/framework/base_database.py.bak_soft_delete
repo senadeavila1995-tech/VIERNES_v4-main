@@ -1,0 +1,112 @@
+from abc import ABC
+
+from sqlalchemy.orm import Session
+
+
+class BaseDatabase(ABC):
+    """
+    Capa base de acceso a datos.
+
+    Utiliza una sesión SQLAlchemy y un modelo ORM concreto.
+    """
+
+    def __init__(
+        self,
+        session: Session,
+        model,
+    ):
+        self.session = session
+        self.model = model
+
+    # ==========================================================
+    # Crear
+    # ==========================================================
+
+    def create(self, data: dict):
+
+        instance = self.model(**data)
+
+        self.session.add(instance)
+        self.session.commit()
+        self.session.refresh(instance)
+
+        return instance
+
+    # ==========================================================
+    # Buscar
+    # ==========================================================
+
+    def get(self, id):
+
+        return (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+            .first()
+        )
+
+    # ==========================================================
+    # Listar
+    # ==========================================================
+
+    def list(self):
+
+        return (
+            self.session
+            .query(self.model)
+            .all()
+        )
+
+    # ==========================================================
+    # Actualizar
+    # ==========================================================
+
+    def update(
+        self,
+        id,
+        data: dict,
+    ):
+
+        instance = (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+            .first()
+        )
+
+        if instance is None:
+            return None
+
+        for field, value in data.items():
+
+            if field == "id":
+                continue
+
+            if hasattr(instance, field):
+                setattr(instance, field, value)
+
+        self.session.commit()
+        self.session.refresh(instance)
+
+        return instance
+
+    # ==========================================================
+    # Eliminar
+    # ==========================================================
+
+    def delete(self, id):
+
+        instance = (
+            self.session
+            .query(self.model)
+            .filter(self.model.id == id)
+            .first()
+        )
+
+        if instance is None:
+            return False
+
+        self.session.delete(instance)
+        self.session.commit()
+
+        return True

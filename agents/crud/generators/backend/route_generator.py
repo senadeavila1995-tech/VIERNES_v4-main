@@ -1,0 +1,200 @@
+from agents.crud.generators.base_generator import BaseGenerator
+from agents.crud.models.generation_context import GenerationContext
+from agents.crud.resolvers.import_resolver import ImportResolver
+from agents.crud.resolvers.module_resolver import ModuleResolver
+
+
+class RouteGenerator(BaseGenerator):
+    """
+    Genera las rutas FastAPI de una entidad.
+    """
+
+    name = "backend_route"
+
+    description = "Genera las rutas FastAPI."
+
+    order = 10
+
+    # ==========================================================
+    # Generación
+    # ==========================================================
+
+    def generate_content(
+        self,
+        context: GenerationContext,
+    ) -> str:
+
+        return self._build_route(context)
+
+    # ==========================================================
+    # Construcción
+    # ==========================================================
+
+    def _build_route(
+        self,
+        context: GenerationContext,
+    ) -> str:
+
+        entity = self.entity(context)
+
+        controller = self.controller_name(context)
+
+        controller_import = ImportResolver.build(
+            ModuleResolver.controller(entity),
+            controller,
+        )
+
+        dto_create = self.class_name(
+            context,
+            "dto_create",
+        )
+
+        dto_update = self.class_name(
+            context,
+            "dto_update",
+        )
+
+        dto_response = self.class_name(
+            context,
+            "dto_response",
+        )
+
+        dto_create_import = ImportResolver.build(
+            ModuleResolver.dto_create(entity),
+            dto_create,
+        )
+
+        dto_update_import = ImportResolver.build(
+            ModuleResolver.dto_update(entity),
+            dto_update,
+        )
+
+        dto_response_import = ImportResolver.build(
+            ModuleResolver.dto_response(entity),
+            dto_response,
+        )
+
+        return f'''"""
+Rutas FastAPI generadas automáticamente por VIERNES.
+
+Entidad:
+{context.entity_name}
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from backend.framework.database.session import get_db
+
+{controller_import}
+{dto_create_import}
+{dto_update_import}
+{dto_response_import}
+
+
+router = APIRouter(
+    prefix="/{entity}",
+    tags=["{context.entity_name}"],
+)
+
+
+@router.post(
+    "/",
+    response_model={dto_response},
+)
+def create(
+    data: {dto_create},
+    db: Session = Depends(get_db),
+):
+
+    controller = {controller}(db)
+
+    return controller.create(data)
+
+
+@router.get(
+    "/{{id}}",
+    response_model={dto_response},
+)
+def get(
+    id: int,
+    db: Session = Depends(get_db),
+):
+
+    controller = {controller}(db)
+
+    result = controller.get(id)
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="{context.entity_name} no encontrado",
+        )
+
+    return result
+
+
+@router.get(
+    "/",
+    response_model=list[{dto_response}],
+)
+def list_all(
+    db: Session = Depends(get_db),
+):
+
+    controller = {controller}(db)
+
+    return controller.list()
+
+
+@router.put(
+    "/{{id}}",
+    response_model={dto_response},
+)
+def update(
+    id: int,
+    data: {dto_update},
+    db: Session = Depends(get_db),
+):
+
+    controller = {controller}(db)
+
+    result = controller.update(
+        id,
+        data,
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="{context.entity_name} no encontrado",
+        )
+
+    return result
+
+
+@router.delete("/{{id}}")
+def delete(
+    id: int,
+    db: Session = Depends(get_db),
+):
+
+    controller = {controller}(db)
+
+    result = controller.delete(id)
+
+    if result is False:
+        raise HTTPException(
+            status_code=404,
+            detail="{context.entity_name} no encontrado",
+        )
+
+    return result
+'''
+
+    def filename(
+        self,
+        context: GenerationContext,
+    ) -> str:
+
+        return f"{self.snake_name(context)}_route.py"

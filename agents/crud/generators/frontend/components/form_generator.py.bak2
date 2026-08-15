@@ -1,0 +1,261 @@
+from agents.crud.generators.frontend.base_frontend_generator import (
+    BaseFrontendGenerator,
+)
+
+from agents.crud.models.generation_context import GenerationContext
+
+
+class FormGenerator(BaseFrontendGenerator):
+
+    name = "frontend_form"
+
+    description = "Genera formulario React con soporte para claves foráneas."
+
+    order = 90
+
+    def generate_content(
+        self,
+        context: GenerationContext,
+    ) -> str:
+
+        component = self.form_name(context)
+
+        inputs = []
+
+        foreign_key_states = []
+
+        foreign_key_imports = []
+
+        foreign_key_effects = []
+
+        for field in context.fields:
+
+            field_name = field.name
+
+            # ==========================================================
+            # Campo relacionado / FOREIGN KEY
+            # ==========================================================
+
+            if (
+                getattr(field, "foreign_key", False)
+                and getattr(field, "references", None)
+            ):
+
+                label = self._field_label(field_name)
+
+                reference = field.references
+
+                reference_variable = self._to_camel_case(
+                    reference
+                )
+
+                setter = self._capitalize(
+                    reference_variable
+                )
+
+                reference_file = self.snake_name_from_reference(
+                    reference
+                )
+
+                service_name = (
+                    f"{reference_variable}Service"
+                )
+
+                foreign_key_states.append(
+                    f"    const [{reference_variable}, "
+                    f"set{setter}] = React.useState([]);"
+                )
+
+                foreign_key_imports.append(
+                    f'import {{ {service_name} }} '
+                    f'from "../../{reference}/services/'
+                    f'{reference_file}_service";'
+                )
+
+                foreign_key_effects.append(
+                    f"""        {service_name}.getAll()
+            .then(set{setter})
+            .catch((error) => {{
+                console.error(
+                    "No fue posible cargar {reference}.",
+                    error
+                );
+            }});"""
+                )
+
+                inputs.append(
+                    f'''        <div className="mb-3">
+
+        <label className="form-label">
+            {label}
+        </label>
+
+        <select
+            className="form-select"
+            name="{field_name}"
+        >
+
+            <option value="">
+                Seleccione {label.lower()}
+            </option>
+
+            {{Array.isArray({reference_variable}) &&
+                {reference_variable}.map((item) => (
+                    <option
+                        key={{item.{field.references_field}}}
+                        value={{item.{field.references_field}}}
+                    >
+                        {{item.nombre || item.name || item.{field.references_field}}}
+                    </option>
+                ))
+            }}
+
+        </select>
+
+    </div>'''
+                )
+
+            # ==========================================================
+            # Campo normal
+            # ==========================================================
+
+            else:
+
+                label = self._field_label(
+                    field_name
+                )
+
+                inputs.append(
+                    f'''        <div className="mb-3">
+
+        <label className="form-label">
+            {label}
+        </label>
+
+        <input
+            className="form-control"
+            name="{field_name}"
+        />
+
+    </div>'''
+                )
+
+        body = "\n\n".join(inputs)
+
+        states = "\n".join(
+            foreign_key_states
+        )
+
+        imports = "\n".join(
+            foreign_key_imports
+        )
+
+        effects = "\n\n".join(
+            foreign_key_effects
+        )
+
+        effect_block = ""
+
+        if effects:
+
+            effect_block = f"""
+
+    React.useEffect(() => {{
+
+{effects}
+
+    }}, []);
+
+"""
+
+        return f'''import React from "react";
+{imports}
+
+export default function {component}() {{
+
+{states}
+{effect_block}
+    return (
+
+        <form>
+
+{body}
+
+            <button
+                type="submit"
+                className="btn btn-primary"
+            >
+                Guardar
+            </button>
+
+        </form>
+
+    );
+
+}}
+'''
+
+    # ==========================================================
+    # Helpers
+    # ==========================================================
+
+    def _field_label(
+        self,
+        field_name: str,
+    ) -> str:
+
+        label = field_name.replace(
+            "_id",
+            ""
+        )
+
+        label = label.replace(
+            "_",
+            " "
+        )
+
+        return label.capitalize()
+
+    def _to_camel_case(
+        self,
+        value: str,
+    ) -> str:
+
+        parts = value.replace(
+            "-",
+            "_"
+        ).split("_")
+
+        if not parts:
+            return value
+
+        return (
+            parts[0].lower()
+            + "".join(
+                part.capitalize()
+                for part in parts[1:]
+            )
+        )
+
+    def _capitalize(
+        self,
+        value: str,
+    ) -> str:
+
+        if not value:
+            return value
+
+        return (
+            value[0].upper()
+            + value[1:]
+        )
+
+    def snake_name_from_reference(
+        self,
+        value: str,
+    ) -> str:
+
+        return value.replace(
+            "-",
+            "_"
+        ).lower()

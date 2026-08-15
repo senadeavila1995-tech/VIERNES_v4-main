@@ -1,0 +1,270 @@
+"""
+Configuración central del motor CRUD.
+
+Única fuente de verdad del framework.
+
+Define:
+
+- Capas
+- Carpetas
+- Templates
+- Convenciones de nombres
+- Extensiones
+"""
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class CrudStructure:
+
+    # ======================================================
+    # Capas
+    # ======================================================
+
+    layers: tuple[str, ...] = (
+        "backend",
+        "frontend",
+    )
+
+    # ======================================================
+    # Carpetas principales
+    # ======================================================
+
+    modules_folder: str = "modules"
+
+    backend_folder: str = "backend"
+    frontend_folder: str = "frontend"
+
+    # ======================================================
+    # Archivo especial
+    # ======================================================
+
+    init_file: str = "__init__.py"
+
+    # ======================================================
+    # Tipos CRUD
+    # ======================================================
+
+    crud_types: dict = field(
+        default_factory=lambda: {
+            # ==================================================
+            # BACKEND PYTHON
+            # ==================================================
+            "model": {
+                "layer": "backend",
+                "folder": "models",
+                "class_suffix": "",
+                "file_suffix": ".py",
+                "module_suffix": None,
+                "template": "model.txt",
+            },
+            "controller": {
+                "layer": "backend",
+                "folder": "controllers",
+                "class_suffix": "Controller",
+                "file_suffix": "_controller.py",
+                "module_suffix": "controller",
+                "template": "controller.txt",
+            },
+            "backend_route": {
+                "layer": "backend",
+                "folder": "routes",
+                "class_suffix": "Router",
+                "file_suffix": "_route.py",
+                "module_suffix": "route",
+                "template": "route.txt",
+            },
+            "service": {
+                "layer": "backend",
+                "folder": "services",
+                "class_suffix": "Service",
+                "file_suffix": "_service.py",
+                "module_suffix": "service",
+                "template": "service.txt",
+            },
+            "repository": {
+                "layer": "backend",
+                "folder": "repositories",
+                "class_suffix": "Repository",
+                "file_suffix": "_repository.py",
+                "module_suffix": "repository",
+                "template": "repository.txt",
+            },
+            "validator": {
+                "layer": "backend",
+                "folder": "validators",
+                "class_suffix": "Validator",
+                "file_suffix": "_validator.py",
+                "module_suffix": "validator",
+                "template": "validator.txt",
+            },
+            "schema": {
+                "layer": "backend",
+                "folder": "schemas",
+                "class_suffix": "Schema",
+                "file_suffix": "_schema.py",
+                "module_suffix": "schema",
+                "template": "schema.txt",
+            },
+            "database": {
+                "layer": "backend",
+                "folder": "database",
+                "class_suffix": "Database",
+                "file_suffix": "_database.py",
+                "module_suffix": "database",
+                "template": "database.txt",
+            },
+            "sql": {
+                "layer": "backend",
+                "folder": "database",
+                "class_suffix": "",
+                "file_suffix": ".sql",
+                "module_suffix": None,
+                "template": None,
+            },
+            "dto": {
+                "layer": "backend",
+                "folder": "dto",
+                "class_suffix": "DTO",
+                "file_suffix": "_dto.py",
+                "module_suffix": "create",
+                "template": "dto.txt",
+            },
+
+            "dto_create": {
+                "layer": "backend",
+                "folder": "dto",
+                "class_suffix": "Create",
+                "file_suffix": "_create.py",
+                "module_suffix": "create",
+                "template": None,
+            },
+
+            "dto_update": {
+                "layer": "backend",
+                "folder": "dto",
+                "class_suffix": "Update",
+                "file_suffix": "_update.py",
+                "module_suffix": "update",
+                "template": None,
+            },
+
+            "dto_response": {
+                "layer": "backend",
+                "folder": "dto",
+                "class_suffix": "Response",
+                "file_suffix": "_response.py",
+                "module_suffix": "response",
+                "template": None,
+            },
+            # ==================================================
+            # FRONTEND REACT + TYPESCRIPT
+            # ==================================================
+            "type": {
+                "layer": "frontend",
+                "folder": "types",
+                "class_suffix": "",
+                "file_suffix": ".ts",
+                "module_suffix": None,
+                "template": "type.txt",
+            },
+            "frontend_api": {
+                "layer": "frontend",
+                "folder": "api",
+                "class_suffix": "Api",
+                "file_suffix": "_api.ts",
+                "module_suffix": "api",
+                "template": "api_service.txt",
+            },
+            "frontend_service": {
+                "layer": "frontend",
+                "folder": "services",
+                "class_suffix": "Service",
+                "file_suffix": "_service.ts",
+                "module_suffix": "service",
+                "template": "service.txt",
+            },
+            "frontend_table": {
+                "layer": "frontend",
+                "folder": "components",
+                "class_suffix": "Table",
+                "file_suffix": "Table.tsx",
+                "module_suffix": "components",
+                "template": "table.txt",
+            },
+            "frontend_form": {
+                "layer": "frontend",
+                "folder": "components",
+                "class_suffix": "Form",
+                "file_suffix": "Form.tsx",
+                "module_suffix": "components",
+                "template": "form.txt",
+            },
+            "frontend_modal": {
+                "layer": "frontend",
+                "folder": "components",
+                "class_suffix": "Modal",
+                "file_suffix": "Modal.tsx",
+                "module_suffix": "components",
+                "template": "modal.txt",
+            },
+            "hook": {
+                "layer": "frontend",
+                "folder": "hooks",
+                "class_suffix": "",
+                "file_suffix": ".ts",
+                "module_suffix": "hooks",
+                "template": "hook.txt",
+            },
+            "page": {
+                "layer": "frontend",
+                "folder": "pages",
+                "class_suffix": "Page",
+                "file_suffix": "Page.tsx",
+                "module_suffix": None,
+                "template": "page.txt",
+            },
+
+            # ==================================================
+            # ARCHIVOS RAIZ DE APLICACION
+            # ==================================================
+
+            "main": {
+                "layer": "backend",
+                "folder": "",
+                "class_suffix": "",
+                "file_suffix": ".py",
+                "module_suffix": None,
+                "template": None,
+            },
+
+            "root_routes": {
+                "layer": "frontend",
+                "folder": "",
+                "class_suffix": "",
+                "file_suffix": ".tsx",
+                "module_suffix": None,
+                "template": None,
+            },
+        }
+    )
+
+    # ======================================================
+    # Extensiones
+    # ======================================================
+
+    extensions: dict = field(
+        default_factory=lambda: {
+            "python": ".py",
+            "typescript": ".ts",
+            "tsx": ".tsx",
+            "javascript": ".js",
+            "jsx": ".jsx",
+            "json": ".json",
+            "sql": ".sql",
+        }
+    )
+
+
+CRUD_STRUCTURE = CrudStructure()

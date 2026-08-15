@@ -1,0 +1,70 @@
+class BaseController:
+    """
+    Controlador base.
+
+    Conecta Validator y Service.
+    """
+
+    validator = None
+
+    def __init__(self, service):
+
+        self.service = service
+
+    # ==========================================================
+    # Crear
+    # ==========================================================
+
+    def create(self, model):
+
+        if self.validator:
+
+            self.validator.validate(model)
+
+        return self.service.create(model)
+
+    # ==========================================================
+    # Buscar
+    # ==========================================================
+
+    def get(self, id):
+
+        return self.service.get(id)
+
+    # ==========================================================
+    # Listar
+    # ==========================================================
+
+    def list(self):
+
+        return self.service.list()
+
+    # ==========================================================
+    # Actualizar
+    # ==========================================================
+
+    def update(
+        self,
+        id,
+        model,
+    ):
+
+        if self.validator:
+
+            self.validator.validate(
+                model,
+                partial=True,
+            )
+
+        return self.service.update(
+            id,
+            model,
+        )
+
+    # ==========================================================
+    # Eliminar
+    # ==========================================================
+
+    def delete(self, id):
+
+        return self.service.delete(id)

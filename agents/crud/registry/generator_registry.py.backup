@@ -1,0 +1,88 @@
+from agents.crud.generators.backend.controller_generator import ControllerGenerator
+from agents.crud.generators.backend.dto_generator import DtoGenerator
+from agents.crud.generators.backend.database_generator import DatabaseGenerator
+from agents.crud.generators.backend.model_generator import ModelGenerator
+from agents.crud.generators.backend.repository_generator import RepositoryGenerator
+from agents.crud.generators.backend.route_generator import RouteGenerator
+from agents.crud.generators.backend.schema_generator import SchemaGenerator
+from agents.crud.generators.backend.service_generator import ServiceGenerator
+from agents.crud.generators.backend.validator_generator import ValidatorGenerator
+
+from agents.crud.generators.database.sql_generator import SqlGenerator
+
+from agents.crud.generators.frontend.frontend_module_generator import (
+    FrontendModuleGenerator,
+)
+
+from agents.crud.generators.frontend.root.root_route_generator import (
+    RootRouteGenerator,
+)
+
+
+class GeneratorRegistry:
+    """
+    Registro central de todos los generadores.
+    """
+
+    def __init__(self):
+
+        self._generators = []
+
+        # ===========================
+        # Backend
+        # ===========================
+
+        self.register(ModelGenerator())
+        self.register(SchemaGenerator())
+        self.register(DtoGenerator())
+        self.register(ValidatorGenerator())
+        self.register(RepositoryGenerator())
+        self.register(ServiceGenerator())
+        self.register(ControllerGenerator())
+        self.register(RouteGenerator())
+
+        # ===========================
+        # Database
+        # ===========================
+
+        self.register(DatabaseGenerator())
+        self.register(SqlGenerator())
+
+        # ===========================
+        # Frontend
+        # ===========================
+
+        self.register(FrontendModuleGenerator())
+        self.register(RootRouteGenerator())
+
+    # ==========================================================
+    # Registro
+    # ==========================================================
+
+    def register(self, generator):
+
+        self._generators.append(generator)
+
+    # ==========================================================
+    # Todos
+    # ==========================================================
+
+    def all(self):
+
+        return sorted(
+            self._generators,
+            key=lambda g: g.order,
+        )
+
+    # ==========================================================
+    # Buscar
+    # ==========================================================
+
+    def get(self, name: str):
+
+        for generator in self._generators:
+
+            if generator.name == name:
+                return generator
+
+        return None

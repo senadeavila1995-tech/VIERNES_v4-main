@@ -1,0 +1,27 @@
+from collections.abc import Generator
+
+from sqlalchemy.orm import Session, sessionmaker
+
+from backend.framework.database.connection import engine
+
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+)
+
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    Proporciona una sesión SQLAlchemy.
+
+    FastAPI podrá utilizar esta función mediante Depends().
+    """
+
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
