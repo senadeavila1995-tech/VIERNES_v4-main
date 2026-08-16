@@ -36,16 +36,74 @@ class CrudGenerator:
         # Resolver relaciones ORM antes de generar modelos
         # ======================================================
 
+        generators = sorted(
+            self.registry.all(),
+            key=lambda generator: generator.order,
+        )
+
         RelationshipResolver.resolve(
             context.definitions
         )
 
         generated_files = []
 
-        generators = sorted(
-            self.registry.all(),
-            key=lambda generator: generator.order,
+        # ======================================================
+        # Refrescar modelos de entidades relacionadas
+        # ======================================================
+        #
+        # Si una entidad nueva agrega una FK hacia una entidad
+        # existente, la entidad existente debe regenerar su modelo.
+        #
+        # Ejemplo:
+        #
+        # Categoria creada primero
+        # Producto agrega categoria_id FK
+        #
+        # Entonces:
+        #
+        # Producto -> categoria
+        # Categoria -> productos
+        #
+
+        model_generator = next(
+            (
+                generator
+                for generator in generators
+                if generator.name == "model"
+            ),
+            None,
         )
+
+        if model_generator:
+
+            current_definition = context.definition
+
+            for entity_name, definition in context.definitions.items():
+
+                if entity_name == context.entity_name:
+                    continue
+
+                if definition.relationships:
+
+                    context.definition = definition
+
+                    generated = model_generator.generate(
+                        context
+                    )
+
+                    if generated:
+
+                        if isinstance(generated, list):
+                            generated_files.extend(
+                                generated
+                            )
+
+                        else:
+                            generated_files.append(
+                                generated
+                            )
+
+            context.definition = current_definition
 
         for generator in generators:
 

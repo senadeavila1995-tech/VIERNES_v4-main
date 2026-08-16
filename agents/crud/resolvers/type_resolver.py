@@ -235,9 +235,12 @@ class TypeResolver:
 
         mapping = cls.ENGINES[engine]
 
-        normalized_type = cls.normalize_type(
-            field.type
-        )
+        if field.foreign_key:
+            normalized_type = "integer"
+        else:
+            normalized_type = cls.normalize_type(
+                field.type
+            )
 
         if normalized_type not in mapping:
 

@@ -145,9 +145,14 @@ class {class_name}(Base):
 
         for field in context.fields:
 
-            sqlalchemy_type = TypeMapper.sqlalchemy(
-                field.type
-            )
+            if field.foreign_key:
+                sqlalchemy_type = TypeMapper.sqlalchemy(
+                    "integer"
+                )
+            else:
+                sqlalchemy_type = TypeMapper.sqlalchemy(
+                    field.type
+                )
 
             sqlalchemy_types.add(
                 sqlalchemy_type
@@ -268,7 +273,51 @@ class {class_name}(Base):
 
         lines = []
 
-        for relation in context.definition.relationships:
+        definition = context.definitions.get(
+            context.definition.entity,
+            context.definition,
+        )
+
+        relations = list(
+            definition.relationships
+        )
+
+        definitions = getattr(
+            context,
+            "definitions",
+            {}
+        )
+
+        for entity_name, definition in definitions.items():
+
+            for relation in definition.relationships:
+
+                if relation.target == context.definition.entity:
+
+                    exists = any(
+                        existing.name == relation.back_populates
+                        for existing in relations
+                    )
+
+                    if relation.back_populates and not exists:
+
+                        from agents.crud.models.crud_relationship import CrudRelationship
+
+                        relations.append(
+                            CrudRelationship(
+                                name=relation.back_populates,
+                                target=entity_name,
+                                relation_type="one_to_many",
+                                back_populates=relation.name,
+                                foreign_key_field=relation.foreign_key_field,
+                                on_delete=relation.on_delete,
+                                lazy=relation.lazy,
+                            )
+                        )
+
+
+        for relation in relations:
+
 
             args = [
                 f'"{relation.target}"'
@@ -362,9 +411,14 @@ class {class_name}(Base):
         field,
     ) -> str:
 
-        sqlalchemy_type = TypeMapper.sqlalchemy(
-            field.type
-        )
+        if field.foreign_key:
+            sqlalchemy_type = TypeMapper.sqlalchemy(
+                "integer"
+            )
+        else:
+            sqlalchemy_type = TypeMapper.sqlalchemy(
+                field.type
+            )
 
         # ======================================================
         # Longitud de tipos String
@@ -542,6 +596,9 @@ class {class_name}(Base):
         self,
         field_type: str,
     ) -> str:
+
+        if field_type.lower() == "fk":
+            field_type = "integer"
 
         return TypeMapper.python(
             field_type
