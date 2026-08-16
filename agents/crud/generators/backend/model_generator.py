@@ -131,15 +131,35 @@ class {class_name}(Base):
         context: GenerationContext,
     ) -> str:
 
-        imports = [
-            "from datetime import datetime",
-            ImportResolver.framework(
-                "base_model",
-                "Base",
-            ),
-            "from sqlalchemy import ForeignKey",
-            "from sqlalchemy.orm import Mapped, mapped_column, relationship",
-        ]
+        datetime_types = set()
+
+        for field in context.fields:
+            if field.type == "date":
+                datetime_types.add("date")
+            elif field.type == "datetime":
+                datetime_types.add("datetime")
+
+        if context.definition.timestamps or context.definition.soft_delete:
+            datetime_types.add("datetime")
+
+        imports = []
+
+        if datetime_types:
+            imports.append(
+                "from datetime import "
+                + ", ".join(sorted(datetime_types))
+            )
+
+        imports.extend(
+            [
+                ImportResolver.framework(
+                    "base_model",
+                    "Base",
+                ),
+                "from sqlalchemy import ForeignKey",
+                "from sqlalchemy.orm import Mapped, mapped_column, relationship",
+            ]
+        )
 
         sqlalchemy_types = set()
 
@@ -240,7 +260,7 @@ class {class_name}(Base):
                 relationship_import = (
                     f"    from ..{NamingResolver.snake(relation.target)}"
                     f".models.{NamingResolver.snake(relation.target)}"
-                    f" import {relation.target}"
+                    f" import {NamingResolver.pascal(relation.target)}"
                 )
 
                 if relationship_import in relationship_imports:
@@ -453,6 +473,16 @@ class {class_name}(Base):
             reference_table = NamingResolver.snake(
                 field.references
             )
+
+            # Resolver tabla real usando las definiciones disponibles
+            for definition in context.definitions.values():
+
+                if (
+                    definition.entity == field.references
+                    or NamingResolver.snake(definition.entity) == reference_table
+                ):
+                    reference_table = definition.table
+                    break
 
             reference = (
                 f"{reference_table}."

@@ -236,9 +236,25 @@ class SqlGenerator(BaseGenerator):
 
         for field in context.definition.foreign_keys:
 
-            reference_table = NamingResolver.snake(
-                field.references
-            )
+            reference_table = None
+
+            if field.references and hasattr(context, "definitions"):
+
+                for definition in context.definitions.values():
+
+                    if (
+                        NamingResolver.snake(definition.entity)
+                        ==
+                        NamingResolver.snake(field.references)
+                    ):
+                        reference_table = definition.table
+                        break
+
+            if reference_table is None:
+
+                reference_table = NamingResolver.snake(
+                    field.references
+                )
 
             fk = (
                 f"CONSTRAINT fk_{context.table_name}_{field.name} "

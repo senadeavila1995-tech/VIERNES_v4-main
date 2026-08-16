@@ -397,7 +397,11 @@ class Router:
             if name.endswith("_id"):
 
                 foreign_key = True
-                references = name.removesuffix("_id") + "s"
+
+                # Normalizar referencia FK
+                # categoria_id -> categoria
+                # producto_id -> producto
+                references = name.removesuffix("_id")
 
             # Resolver nulabilidad automáticamente
             nullable = item.get("nullable", False)

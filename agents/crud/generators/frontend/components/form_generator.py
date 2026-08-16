@@ -67,6 +67,10 @@ class FormGenerator(BaseFrontendGenerator):
 
                 reference = field.references
 
+                # Normalizar referencias de tablas pluralizadas
+                # categorias -> categoria
+                reference = reference.rstrip("s")
+
                 reference_variable = NamingResolver.camel(
                     reference
                 )

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 
 from .crud_field import CrudField
 from .crud_relationship import CrudRelationship
@@ -92,6 +92,35 @@ class CrudDefinition:
 
         if table not in self.dependencies:
             self.dependencies.append(table)
+
+    # ==========================================================
+    # SERIALIZACION
+    # ==========================================================
+
+    def to_dict(self):
+
+        return {
+            "entity": self.entity,
+            "table": self.table,
+
+            "fields": [
+                asdict(field)
+                for field in self.fields
+            ],
+
+            "relationships": [
+                asdict(relationship)
+                for relationship in self.relationships
+            ],
+
+            "timestamps": self.timestamps,
+            "soft_delete": self.soft_delete,
+            "auth": self.auth,
+            "description": self.description,
+            "dependencies": self.dependencies,
+        }
+
+
 
     # ==========================================================
     # Consultas

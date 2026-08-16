@@ -50,6 +50,7 @@ from agents.crud.generators.frontend.index.index_generator import IndexGenerator
 
 # ROOT
 from agents.crud.generators.frontend.root.root_route_generator import RootRouteGenerator
+from agents.crud.generators.frontend.root.app.app_generator import AppGenerator
 
 
 class GeneratorRegistry:
@@ -140,6 +141,7 @@ class GeneratorRegistry:
         # ===========================
 
         self.register(RootRouteGenerator())
+        self.register(AppGenerator())
 
 
     def register(self, generator):

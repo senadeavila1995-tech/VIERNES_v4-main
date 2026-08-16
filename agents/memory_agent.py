@@ -106,10 +106,79 @@ class MemoryAgent:
         )
 
 
-        self.context.crud_definitions = data.get(
+        from agents.crud.models.crud_definition import CrudDefinition
+        from agents.crud.models.crud_field import CrudField
+        from agents.crud.models.crud_relationship import CrudRelationship
+
+
+        self.context.crud_definitions = {}
+
+
+        crud_data = data.get(
             "crud_definitions",
             {}
         )
+
+
+        for name, item in crud_data.items():
+
+            definition = CrudDefinition(
+                entity=item["entity"],
+                table=item["table"],
+            )
+
+
+            for field_data in item.get(
+                "fields",
+                []
+            ):
+
+                definition.fields.append(
+                    CrudField(
+                        **field_data
+                    )
+                )
+
+
+            for relation_data in item.get(
+                "relationships",
+                []
+            ):
+
+                definition.relationships.append(
+                    CrudRelationship(
+                        **relation_data
+                    )
+                )
+
+
+            definition.timestamps = item.get(
+                "timestamps",
+                True
+            )
+
+            definition.soft_delete = item.get(
+                "soft_delete",
+                False
+            )
+
+            definition.auth = item.get(
+                "auth",
+                False
+            )
+
+            definition.description = item.get(
+                "description",
+                ""
+            )
+
+            definition.dependencies = item.get(
+                "dependencies",
+                []
+            )
+
+
+            self.context.crud_definitions[name] = definition
 
 
 
@@ -161,6 +230,13 @@ class MemoryAgent:
 
             "project_index":
                 self.context.project_index,
+
+            "crud_definitions":
+                {
+                    name: definition.to_dict()
+                    for name, definition
+                    in self.context.crud_definitions.items()
+                },
         }
 
 
@@ -414,6 +490,13 @@ class MemoryAgent:
 
             "project_index":
                 self.context.project_index,
+
+            "crud_definitions":
+                {
+                    name: definition.to_dict()
+                    for name, definition
+                    in self.context.crud_definitions.items()
+                },
         }
 
 

@@ -45,65 +45,109 @@ class CrudGenerator:
             context.definitions
         )
 
+
+        print("\n========== DEBUG DEFINITIONS AFTER RESOLVE ==========")
+
+        for name, definition in context.definitions.items():
+
+            print(
+                name,
+                "fields=",
+                len(definition.fields),
+                "relations=",
+                len(definition.relationships)
+            )
+
+            for relation in definition.relationships:
+
+                print(
+                    "   ",
+                    relation.name,
+                    "->",
+                    relation.target,
+                    "back=",
+                    relation.back_populates
+                )
+
+        print("=====================================================\n")
+
+
         generated_files = []
 
         # ======================================================
-        # Refrescar modelos de entidades relacionadas
+        # Generar entidades relacionadas completas
         # ======================================================
         #
-        # Si una entidad nueva agrega una FK hacia una entidad
-        # existente, la entidad existente debe regenerar su modelo.
+        # Si una entidad relacionada participa en una relación,
+        # debe generarse como CRUD completo y no solamente el modelo.
         #
         # Ejemplo:
         #
-        # Categoria creada primero
-        # Producto agrega categoria_id FK
+        # Pedido.creado_por_id -> Usuario
         #
-        # Entonces:
+        # Usuario necesita:
+        # model
+        # schemas
+        # dto
+        # repository
+        # service
+        # controller
+        # routes
         #
-        # Producto -> categoria
-        # Categoria -> productos
-        #
+        
+        current_definition = context.definition
 
-        model_generator = next(
-            (
-                generator
-                for generator in generators
-                if generator.name == "model"
-            ),
-            None,
-        )
 
-        if model_generator:
+        for entity_name, definition in context.definitions.items():
 
-            current_definition = context.definition
+            if entity_name == context.entity_name:
+                continue
 
-            for entity_name, definition in context.definitions.items():
 
-                if entity_name == context.entity_name:
+            if not definition.relationships:
+                continue
+
+
+            context.definition = definition
+
+
+            for generator in generators:
+
+                if generator.name in [
+                    "main",
+                    "root_routes",
+                ]:
                     continue
 
-                if definition.relationships:
 
-                    context.definition = definition
+                if not generator.validate(context):
+                    continue
 
-                    generated = model_generator.generate(
-                        context
+
+                generated = generator.generate(
+                    context
+                )
+
+
+                if generated is None:
+                    continue
+
+
+                if isinstance(generated, list):
+
+                    generated_files.extend(
+                        generated
                     )
 
-                    if generated:
+                else:
 
-                        if isinstance(generated, list):
-                            generated_files.extend(
-                                generated
-                            )
+                    generated_files.append(
+                        generated
+                    )
 
-                        else:
-                            generated_files.append(
-                                generated
-                            )
 
-            context.definition = current_definition
+        context.definition = current_definition
+
 
         for generator in generators:
 

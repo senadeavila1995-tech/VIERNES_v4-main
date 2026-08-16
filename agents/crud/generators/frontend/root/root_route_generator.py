@@ -6,11 +6,6 @@ from agents.crud.models.generation_context import GenerationContext
 
 
 class RootRouteGenerator(BaseFrontendGenerator):
-    """
-    Genera las rutas raíz de la aplicación React.
-
-    Reúne las rutas de todos los módulos CRUD generados.
-    """
 
     name = "root_routes"
 
@@ -18,14 +13,11 @@ class RootRouteGenerator(BaseFrontendGenerator):
 
     order = 130
 
+
     def generate(
         self,
         context: GenerationContext,
     ):
-        """
-        Genera un archivo perteneciente a la raíz
-        del frontend, no a un módulo CRUD.
-        """
 
         if not self.validate(context):
             raise ValueError(
@@ -40,6 +32,7 @@ class RootRouteGenerator(BaseFrontendGenerator):
             description=self.description,
         )
 
+
     def validate(
         self,
         context: GenerationContext,
@@ -48,6 +41,7 @@ class RootRouteGenerator(BaseFrontendGenerator):
         return bool(
             getattr(context, "definitions", None)
         )
+
 
     def generate_content(
         self,
@@ -69,139 +63,59 @@ class RootRouteGenerator(BaseFrontendGenerator):
                 definition
             )
 
-            page = self.pascal_name_from_definition(
+            route_name = self.camel_name_from_definition(
                 definition
-            ) + "Page"
+            )
 
             imports.append(
-                f'import {page} from "./modules/{module}/pages/{page}";'
+                f'import {{ {route_name}Routes }} from "./modules/{module}/routes";'
             )
 
             routes.append(
-                f'''    {{
-        path: "/{module}",
-        element: <{page} />,
-    }},'''
+                f"    ...{route_name}Routes,"
             )
 
-        return f'''import {{
-    BrowserRouter,
-    Link,
-    Route,
-    Routes,
-}} from "react-router-dom";
+        return (
+            "import {\n"
+            "    Routes,\n"
+            "    Route,\n"
+            "} from \"react-router-dom\";\n\n"
+            +
+            "\n".join(imports)
+            +
+            "\n\n\nconst routes = [\n"
+            +
+            "\n".join(routes)
+            +
+            "\n];\n\n"
+            +
+            "export default function AppRoutes() {\n\n"
+            "    return (\n"
+            "        <Routes>\n"
+            "            {routes.map((route) => (\n"
+            "                <Route\n"
+            "                    key={route.path}\n"
+            "                    {...route}\n"
+            "                />\n"
+            "            ))}\n"
+            "        </Routes>\n"
+            "    );\n\n"
+            "}\n"
+        )
 
-{chr(10).join(imports)}
-
-
-function Inicio() {{
-
-    return (
-
-        <div className="container mt-4">
-
-            <h1>
-                VIERNES CRUD
-            </h1>
-
-            <p>
-                Seleccione un módulo:
-            </p>
-
-            <div className="d-flex gap-2 flex-wrap">
-
-{chr(10).join(
-    f'''                <Link
-                    to="/{self.snake_name_from_definition(definition)}"
-                    className="btn btn-primary"
-                >
-                    {definition.entity}
-                </Link>'''
-    for definition in definitions.values()
-)}
-
-            </div>
-
-        </div>
-
-    );
-
-}}
-
-
-export default function App() {{
-
-    return (
-
-        <BrowserRouter>
-
-            <nav className="navbar navbar-dark bg-dark">
-
-                <div className="container">
-
-                    <Link
-                        to="/"
-                        className="navbar-brand"
-                    >
-                        VIERNES CRUD
-                    </Link>
-
-                    <div className="d-flex gap-2">
-
-{chr(10).join(
-    f'''                        <Link
-                            to="/{self.snake_name_from_definition(definition)}"
-                            className="btn btn-outline-light btn-sm"
-                        >
-                            {definition.entity}
-                        </Link>'''
-    for definition in definitions.values()
-)}
-
-                    </div>
-
-                </div>
-
-            </nav>
-
-            <Routes>
-
-                <Route
-                    path="/"
-                    element={{<Inicio />}}
-                />
-
-{chr(10).join(
-    f'''                <Route
-                    path="/{self.snake_name_from_definition(definition)}"
-                    element={{<{self.pascal_name_from_definition(definition)}Page />}}
-                />'''
-    for definition in definitions.values()
-)}
-
-            </Routes>
-
-        </BrowserRouter>
-
-    );
-
-}}
-'''
 
     def folder(self) -> str:
 
         return ""
+
 
     def filename(
         self,
         context: GenerationContext,
     ) -> str:
 
-        return "App.tsx"
+        return "routes.tsx"
 
-    # ==========================================================
-    # Helpers para CrudDefinition
-    # ==========================================================
 
     def snake_name_from_definition(
         self,
@@ -214,13 +128,14 @@ export default function App() {{
             definition.entity
         )
 
-    def pascal_name_from_definition(
+
+    def camel_name_from_definition(
         self,
         definition,
     ) -> str:
 
         from agents.crud.resolvers.naming_resolver import NamingResolver
 
-        return NamingResolver.pascal(
+        return NamingResolver.camel(
             definition.entity
         )
