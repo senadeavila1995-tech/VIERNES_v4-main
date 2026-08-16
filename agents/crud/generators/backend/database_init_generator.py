@@ -22,20 +22,20 @@ class DatabaseInitGenerator(BaseGenerator):
 
         imports = []
 
-        for definition in context.definitions.values():
+        definition = context.definition
 
-            module = self.snake_name_from_definition(
-                definition
-            )
+        module = self.snake_name_from_definition(
+            definition
+        )
 
-            entity = self.class_name_from_definition(
-                definition
-            )
+        entity = self.class_name_from_definition(
+            definition
+        )
 
-            imports.append(
-                f"from backend.modules.{module}.models.{module} "
-                f"import {entity}"
-            )
+        imports.append(
+            f"from backend.modules.{module}.models.{module} "
+            f"import {entity}"
+        )
 
         imports_text = "\n".join(imports)
 
@@ -101,7 +101,7 @@ def init_database():
         return bool(
             getattr(
                 context,
-                "definitions",
+                "definition",
                 None,
             )
         )

@@ -106,6 +106,12 @@ class MemoryAgent:
         )
 
 
+        self.context.crud_definitions = data.get(
+            "crud_definitions",
+            {}
+        )
+
+
 
     # ==========================================================
     # GUARDAR MEMORIA
@@ -154,8 +160,7 @@ class MemoryAgent:
 
 
             "project_index":
-                self.context.project_index
-
+                self.context.project_index,
         }
 
 
@@ -321,6 +326,20 @@ class MemoryAgent:
     # CONSULTAS
     # ==========================================================
 
+    def register_crud_definition(
+        self,
+        entity: str,
+        definition,
+    ):
+
+        self.context.crud_definitions[entity] = definition
+
+
+    def get_crud_definitions(self):
+
+        return self.context.crud_definitions
+
+
     def get_context(self):
 
         return self.context
@@ -394,8 +413,7 @@ class MemoryAgent:
                 self.context.scanned,
 
             "project_index":
-                self.context.project_index
-
+                self.context.project_index,
         }
 
 

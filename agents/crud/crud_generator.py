@@ -77,6 +77,9 @@ class CrudGenerator:
         # GENERADORES RAÍZ DEL PROYECTO
         # ======================================================
 
+        print("DEBUG ROOT CONTEXT")
+        print("DEFINITIONS:", context.definitions)
+
         for generator in generators:
 
             if generator.name not in [

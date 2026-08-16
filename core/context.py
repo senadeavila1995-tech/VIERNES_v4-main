@@ -62,3 +62,14 @@ class Context:
     project_index: dict = field(
         default_factory=dict
     )
+
+
+
+    # =====================================================
+    # CRUD Generator
+    # =====================================================
+
+    crud_definitions: dict = field(
+        default_factory=dict
+    )
+

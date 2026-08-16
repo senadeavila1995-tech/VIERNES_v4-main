@@ -370,13 +370,13 @@ class {class_name}(Base):
         # Longitud de tipos String
         # ======================================================
 
-        if (
-            sqlalchemy_type == "String"
-            and getattr(field, "length", None)
-        ):
-            sqlalchemy_type = (
-                f"String({field.length})"
-            )
+        if sqlalchemy_type == "String":
+            length = getattr(field, "length", None)
+
+            if length:
+                sqlalchemy_type = f"String({length})"
+            else:
+                sqlalchemy_type = "String(255)"
 
         arguments = [
             sqlalchemy_type,

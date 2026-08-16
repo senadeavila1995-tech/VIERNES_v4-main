@@ -55,6 +55,20 @@ class RelationshipResolver:
                 target_definition = definitions.get(target)
 
                 if not target_definition:
+
+                    for name, candidate in definitions.items():
+
+                        if (
+                            candidate.table == target
+                            or NamingResolver.snake(name)
+                            == NamingResolver.snake(
+                                target.rstrip("s")
+                            )
+                        ):
+                            target_definition = candidate
+                            break
+
+                if not target_definition:
                     continue
 
                 relation_name = field.name

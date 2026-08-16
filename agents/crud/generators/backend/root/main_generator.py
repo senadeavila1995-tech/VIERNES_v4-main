@@ -46,7 +46,7 @@ class MainGenerator(BaseGenerator):
         return bool(
             getattr(
                 context,
-                "definitions",
+                "definition",
                 None,
             )
         )

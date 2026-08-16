@@ -384,6 +384,12 @@ class Router:
             name = item.get("name")
             field_type = item.get("type")
 
+
+            # La PK id ya fue creada automáticamente arriba
+            if name == "id":
+                continue
+
+
             foreign_key = False
             references = None
 
@@ -446,10 +452,36 @@ class Router:
             orm="sqlalchemy",
         )
 
+        self.memory.register_crud_definition(
+            entity,
+            definition,
+        )
+
+
+        definitions = self.memory.get_crud_definitions()
+
+
         context = GenerationContext(
             definition=definition,
             project=project,
+            definitions=definitions,
         )
+
+        print("=" * 60)
+        print("CRUD ROUTER DEBUG")
+        print("ENTITY:", context.definition.entity)
+        print(
+            "FIELDS:",
+            [
+                field.name
+                for field in context.fields
+            ]
+        )
+        print(
+            "DEFINITIONS:",
+            list(context.definitions.keys())
+        )
+        print("=" * 60)
 
         return self.crud.execute(context)
 
