@@ -13,6 +13,7 @@ from agents.crud.models.crud_definition import CrudDefinition
 from agents.crud.models.project_context import ProjectContext
 from agents.crud.models.generation_context import GenerationContext
 from agents.crud.models.crud_field import CrudField
+from agents.crud.validators.schema_validator import SchemaValidator
 
 
 class Router:
@@ -437,11 +438,73 @@ class Router:
                 )
             )
 
+        # ======================================================
+        # SCHEMA ENRICHMENT - FOREIGN KEYS REALES
+        # ======================================================
+
+        from agents.crud.validators.schema_introspector import SchemaIntrospector
+
+        introspector = SchemaIntrospector()
+
+        existing_fields = {
+            field.name
+            for field in fields
+        }
+
+        foreign_keys = introspector.get_foreign_keys(
+            table
+        )
+
+        for fk in foreign_keys:
+
+            for column in fk.get("constrained_columns", []):
+
+                if column in existing_fields:
+                    continue
+
+                fields.append(
+                    CrudField(
+                        name=column,
+                        type="integer",
+                        foreign_key=True,
+                        references=fk.get("referred_table"),
+                        references_field=(
+                            fk.get("referred_columns", ["id"])[0]
+                        ),
+                    )
+                )
+
+        print("=" * 60)
+        print("SCHEMA ENRICHMENT")
+        print(
+            [
+                field.name
+                for field in fields
+            ]
+        )
+        print("=" * 60)
+
+
         definition = CrudDefinition(
             entity=entity,
             table=table,
             fields=fields,
         )
+
+
+        # ======================================================
+        # VALIDACIÓN CONTRA ESQUEMA REAL
+        # ======================================================
+
+        schema_check = SchemaValidator.compare(
+            definition
+        )
+
+        print("=" * 60)
+        print("SCHEMA VALIDATION")
+        print(schema_check)
+        print("=" * 60)
+
 
         current_project = self.memory.get_context().current_project
 
@@ -471,6 +534,25 @@ class Router:
             definitions=definitions,
         )
 
+
+        # ======================================================
+        # Guardar validación de esquema en contexto
+        # ======================================================
+
+        context.set_metadata(
+            "schema_validation",
+            schema_check,
+        )
+
+
+        if schema_check["missing_in_crud"]:
+
+            context.add_warning(
+                "Campos existentes en la BD no incluidos en el CRUD: "
+                + ", ".join(schema_check["missing_in_crud"])
+            )
+
+
         print("=" * 60)
         print("CRUD ROUTER DEBUG")
         print("ENTITY:", context.definition.entity)
@@ -485,6 +567,27 @@ class Router:
             "DEFINITIONS:",
             list(context.definitions.keys())
         )
+        print("=" * 60)
+
+        print("RELATION DEBUG")
+        for f in context.fields:
+            print(
+                f.name,
+                "FK=", f.foreign_key,
+                "REF=", f.references,
+                "REF_FIELD=", f.references_field
+            )
+
+        print("ALL DEFINITIONS DEBUG")
+        for name, definition in context.definitions.items():
+            print(
+                name,
+                [
+                    field.name
+                    for field in definition.fields
+                ]
+            )
+
         print("=" * 60)
 
         return self.crud.execute(context)

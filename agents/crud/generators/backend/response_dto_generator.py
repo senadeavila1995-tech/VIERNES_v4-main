@@ -40,6 +40,30 @@ class ResponseDtoGenerator(BaseGenerator):
 
         fields = []
 
+        # ==================================
+        # Identificador ORM
+        # ==================================
+        #
+        # Todo modelo generado por VIERNES
+        # posee un campo id aunque este no forme
+        # parte de context.fields.
+        #
+        # El DTO Response debe exponerlo para que
+        # clientes HTTP puedan identificar registros
+        # y resolver relaciones FK.
+        # ==================================
+
+        generated_fields = set()
+
+        if not any(
+            field.name == "id"
+            for field in context.fields
+        ):
+            fields.append(
+                "    id: int"
+            )
+            generated_fields.add("id")
+
         relationship_imports = []
 
         # ==================================
@@ -47,6 +71,9 @@ class ResponseDtoGenerator(BaseGenerator):
         # ==================================
 
         for field in context.fields:
+
+            if field.name in generated_fields:
+                continue
 
             python_type = TypeMapper.python(
                 field.type

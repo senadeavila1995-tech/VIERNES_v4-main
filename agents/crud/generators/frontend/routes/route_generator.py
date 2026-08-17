@@ -16,6 +16,25 @@ class RouteGenerator(BaseFrontendGenerator):
 
     order = 110
 
+    def generate(
+        self,
+        context: GenerationContext,
+    ):
+
+        if not self.validate(context):
+            raise ValueError(
+                f"El generador '{self.name}' no puede ejecutarse."
+            )
+
+        return self.build_file(
+            entity=context.entity_name,
+            folder="",
+            filename=self.filename(context),
+            content=self.generate_content(context),
+            description=self.description,
+        )
+
+
     def generate_content(
         self,
         context: GenerationContext,

@@ -72,7 +72,7 @@ class FormGenerator(BaseFrontendGenerator):
                 reference = reference.rstrip("s")
 
                 reference_variable = NamingResolver.camel(
-                    reference
+                    field_name.replace("_id", "")
                 )
 
                 reference_type = NamingResolver.pascal(
@@ -89,7 +89,9 @@ class FormGenerator(BaseFrontendGenerator):
                 # IMPORTAR UNA SOLA VEZ CADA REFERENCIA
                 # --------------------------------------------------
 
-                if reference not in processed_references:
+                relation_key = f"{field_name}:{reference}"
+
+                if relation_key not in processed_references:
 
                     imports.append(
                         f'import type {{ {reference_type} }} '
@@ -105,13 +107,13 @@ class FormGenerator(BaseFrontendGenerator):
 
                     states.append(
                         f"    const [{reference_variable}, "
-                        f"set{reference_type}] = "
+                        f"set{NamingResolver.pascal(reference_variable)}] = "
                         f"useState<{reference_type}[]>([]);"
                     )
 
                     effects.append(
                         f'''        {service_name}.getAll()
-        .then(set{reference_type})
+        .then(set{NamingResolver.pascal(reference_variable)})
         .catch((error) => {{
             console.error(
                 "No fue posible cargar {reference_variable}.",
@@ -120,7 +122,7 @@ class FormGenerator(BaseFrontendGenerator):
         }});'''
                     )
 
-                    processed_references.add(reference)
+                    processed_references.add(relation_key)
 
                 label = self._field_label(field_name)
 
@@ -268,7 +270,14 @@ class FormGenerator(BaseFrontendGenerator):
                 False,
             )
 
-            if field_type == "number":
+            if getattr(field, "foreign_key", False):
+
+                if nullable:
+                    value = "null"
+                else:
+                    value = "0"
+
+            elif field_type == "number":
 
                 if nullable:
                     value = "null"
@@ -303,8 +312,11 @@ class FormGenerator(BaseFrontendGenerator):
             ):
                 continue
 
-            if self.ts_type(field) == "number":
-                numeric_fields.append(field.name)
+            if "number" in self.ts_type(field):
+
+                numeric_fields.append(
+                    field.name
+                )
 
         # ==========================================================
         # HANDLE CHANGE
@@ -604,7 +616,31 @@ export default function {component}({{
 
         if isinstance(definitions, dict):
 
-            dependency = definitions.get(reference)
+            dependency = None
+
+            # --------------------------------------------------
+            # Resolver entidad relacionada.
+            #
+            # Puede venir como:
+            # categoria
+            # Categoria
+            # categorias
+            # --------------------------------------------------
+
+            possible_names = [
+                reference,
+                NamingResolver.pascal(reference),
+                NamingResolver.snake(reference),
+                f"{reference}s",
+                NamingResolver.pascal(reference) + "s",
+            ]
+
+            for name in possible_names:
+
+                if name in definitions:
+                    dependency = definitions[name]
+                    break
+
 
             if dependency is not None:
 

@@ -93,7 +93,7 @@ from backend.framework.database.session import get_db
 
 
 router = APIRouter(
-    prefix="/{self.snake_name(context)}",
+    prefix="/{context.definition.table}",
     tags=["{context.entity_name}"],
 )
 

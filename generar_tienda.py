@@ -7,13 +7,48 @@ from agents.crud.models.crud_definition import CrudDefinition
 from agents.crud.models.crud_field import CrudField
 
 
-definition = CrudDefinition(
+# ==========================================================
+# CATEGORIA
+# ==========================================================
+
+categoria = CrudDefinition(
+    entity="Categoria",
+    table="categorias",
+)
+
+
+categoria.add_field(
+    CrudField(
+        name="nombre",
+        type="string",
+        length=255,
+        required=True,
+        nullable=False,
+    )
+)
+
+categoria.add_field(
+    CrudField(
+        name="descripcion",
+        type="string",
+        length=255,
+        required=True,
+        nullable=False,
+    )
+)
+
+
+# ==========================================================
+# PRODUCTO
+# ==========================================================
+
+producto = CrudDefinition(
     entity="Producto",
     table="productos",
 )
 
 
-definition.add_field(
+producto.add_field(
     CrudField(
         name="nombre",
         type="string",
@@ -23,7 +58,7 @@ definition.add_field(
     )
 )
 
-definition.add_field(
+producto.add_field(
     CrudField(
         name="precio",
         type="float",
@@ -32,7 +67,7 @@ definition.add_field(
     )
 )
 
-definition.add_field(
+producto.add_field(
     CrudField(
         name="stock",
         type="int",
@@ -41,6 +76,22 @@ definition.add_field(
     )
 )
 
+producto.add_field(
+    CrudField(
+        name="categoria_id",
+        type="int",
+        required=True,
+        nullable=False,
+        foreign_key=True,
+        references="Categoria",
+        references_field="id",
+    )
+)
+
+
+# ==========================================================
+# PROYECTO
+# ==========================================================
 
 project = ProjectContext(
     project_name="tienda",
@@ -48,11 +99,16 @@ project = ProjectContext(
 )
 
 
+# ==========================================================
+# CONTEXTO
+# ==========================================================
+
 context = GenerationContext(
-    definition=definition,
+    definition=producto,
     project=project,
     definitions={
-        "producto": definition,
+        "categoria": categoria,
+        "producto": producto,
     },
 )
 

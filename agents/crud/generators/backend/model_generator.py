@@ -52,6 +52,17 @@ class ModelGenerator(BaseGenerator):
         imports = self._build_imports(context)
 
         columns = []
+
+        has_primary_key = any(
+            field.primary_key
+            for field in context.fields
+        )
+
+        if not has_primary_key:
+            columns.append(
+                self._build_default_id()
+            )
+
         for field in context.fields:
 
             columns.append(
@@ -163,6 +174,24 @@ class {class_name}(Base):
 
         sqlalchemy_types = set()
 
+        # ======================================================
+        # ID automático
+        # ======================================================
+        #
+        # Si la definición no declara una PK explícita,
+        # _build_model() genera un id Integer automáticamente.
+        # Por tanto Integer también debe estar presente en los
+        # imports aunque ningún CrudField sea de tipo integer.
+        #
+
+        has_primary_key = any(
+            field.primary_key
+            for field in context.fields
+        )
+
+        if not has_primary_key:
+            sqlalchemy_types.add("Integer")
+
         for field in context.fields:
 
             if field.foreign_key:
@@ -258,7 +287,7 @@ class {class_name}(Base):
             for relation in context.definition.relationships:
 
                 relationship_import = (
-                    f"    from ..{NamingResolver.snake(relation.target)}"
+                    f"    from ...{NamingResolver.snake(relation.target)}"
                     f".models.{NamingResolver.snake(relation.target)}"
                     f" import {NamingResolver.pascal(relation.target)}"
                 )
@@ -423,6 +452,15 @@ class {class_name}(Base):
             )
 
         return "\n\n".join(lines)
+
+
+    def _build_default_id(self) -> str:
+
+        return """    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )"""
 
 
     def _build_column(

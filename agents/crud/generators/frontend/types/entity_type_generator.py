@@ -31,6 +31,25 @@ class EntityTypeGenerator(BaseFrontendGenerator):
 
         fields = []
 
+        # ==========================================================
+        # PRIMARY KEY IMPLÍCITA
+        #
+        # El backend genera automáticamente un id cuando la
+        # definición no declara una clave primaria explícita.
+        #
+        # Las entidades Response/Entity deben reflejar ese id.
+        # ==========================================================
+
+        has_primary_key = any(
+            getattr(field, "primary_key", False)
+            for field in context.fields
+        )
+
+        if not has_primary_key:
+            fields.append(
+                "    id: number;"
+            )
+
         for field in context.fields:
             fields.append(
                 f"    {field.name}: {self.ts_type(field)};"

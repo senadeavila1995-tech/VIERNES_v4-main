@@ -80,10 +80,15 @@ class RootRouteGenerator(BaseFrontendGenerator):
             "    Routes,\n"
             "    Route,\n"
             "} from \"react-router-dom\";\n\n"
+            "import HomePage from \"./HomePage\";\n\n"
             +
             "\n".join(imports)
             +
             "\n\n\nconst routes = [\n"
+            "    {\n"
+            "        path: \"/\",\n"
+            "        element: <HomePage />,\n"
+            "    },\n"
             +
             "\n".join(routes)
             +

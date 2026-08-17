@@ -132,6 +132,49 @@ cuando la intención sea generar un CRUD.
 
 
 ==================================================
+REGLA CAMPOS CRUD
+==================================================
+
+Cuando generes una acción create_crud:
+
+- Solo incluye campos escritos explícitamente por el usuario.
+- Nunca inventes campos por conocimiento del dominio.
+- Nunca agregues automáticamente campos como:
+  nombre
+  precio
+  stock
+  descripcion
+  created_at
+  updated_at
+
+El campo id es responsabilidad del generador CRUD.
+
+Ejemplo:
+
+Usuario:
+
+Crea CRUD de productos usando la tabla productos
+
+
+Respuesta:
+
+{
+    "steps":[
+        {
+            "action":"create_crud",
+            "parameters":{
+                "entity":"Producto",
+                "table":"productos",
+                "fields":[]
+            },
+            "description":"Generar CRUD productos"
+        }
+    ]
+}
+
+
+
+==================================================
 REGLAS GENERALES
 ==================================================
 

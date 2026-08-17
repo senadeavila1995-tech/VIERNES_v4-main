@@ -77,6 +77,22 @@ class SqlGenerator(BaseGenerator):
 
         columns = []
 
+        has_primary_key = any(
+            field.primary_key
+            for field in context.fields
+        )
+
+        if not has_primary_key:
+
+            if context.project.database == "mysql":
+                columns.append(
+                    "id INT PRIMARY KEY AUTO_INCREMENT"
+                )
+            else:
+                columns.append(
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT"
+                )
+
         for field in context.fields:
 
             columns.append(

@@ -86,30 +86,63 @@ class CrudGenerator:
             "root_routes",
             "home",
             "app",
-            "database_init",
         }
 
-        for definition in context.definitions.values():
+        # ======================================================
+        # Generar entidades relacionadas completas
+        # ======================================================
+        #
+        # Si una entidad relacionada participa en una relación,
+        # debe generarse como CRUD completo y no solamente el modelo.
+        #
+        # Ejemplo:
+        #
+        # Pedido.creado_por_id -> Usuario
+        #
+        # Usuario necesita:
+        # model
+        # schemas
+        # dto
+        # repository
+        # service
+        # controller
+        # routes
+        #
+        
+        current_definition = context.definition
+
+
+        for entity_name, definition in context.definitions.items():
+
+            if entity_name == context.entity_name:
+                continue
+
+
+            if not definition.relationships:
+                continue
+
 
             context.definition = definition
+
 
             for generator in generators:
 
                 if generator.name in root_generators:
                     continue
 
-                if generator.name in {
-                    "database_init",
-                }:
-                    continue
 
                 if not generator.validate(context):
                     continue
 
-                generated = generator.generate(context)
+
+                generated = generator.generate(
+                    context
+                )
+
 
                 if generated is None:
                     continue
+
 
                 if isinstance(generated, list):
 
@@ -122,6 +155,32 @@ class CrudGenerator:
                     generated_files.append(
                         generated
                     )
+
+
+        context.definition = current_definition
+
+
+        for generator in generators:
+
+            if generator.name in root_generators:
+                continue
+
+            if not generator.validate(context):
+                continue
+
+            generated = generator.generate(context)
+
+            if generated is None:
+                continue
+
+            # Un generador normal devuelve GeneratedFile.
+            if isinstance(generated, list):
+
+                generated_files.extend(generated)
+
+            else:
+
+                generated_files.append(generated)
 
 
         # ======================================================
